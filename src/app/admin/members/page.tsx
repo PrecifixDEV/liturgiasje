@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { memberService, Member } from "@/services/memberService"
 import { Button } from "@/components/ui/button"
-import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Search } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Search, UserCircle } from "lucide-react"
 import { toast } from "sonner"
 import { Header } from "@/components/Header"
 import {
@@ -125,20 +126,29 @@ export default function AdminMembersPage() {
                 <p className="text-center text-xs text-stone-400 py-10">Nenhum membro encontrado.</p>
               ) : (
                 filteredMembers.map((member) => (
-                  <div key={member.id} className="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-stone-800">{member.full_name}</p>
-                        {member.is_claimed && (
-                          <span className="text-[9px] font-bold uppercase tracking-wider bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">
-                            Vinculado
-                          </span>
-                        )}
+                  <div key={member.id} className="bg-white p-4 rounded-3xl border border-stone-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <Avatar className="h-10 w-10 shrink-0 border border-stone-100">
+                        <AvatarImage src={member.claimed_user?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-stone-50 text-stone-300">
+                          <UserCircle className="h-6 w-6" />
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="space-y-0.5 truncate">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-stone-800 truncate">{member.full_name}</p>
+                          {member.is_claimed && (
+                            <span className="text-[8px] font-bold uppercase tracking-wider bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 shrink-0">
+                              No App
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-stone-500 truncate">{member.whatsapp || "Sem WhatsApp"}</p>
                       </div>
-                      <p className="text-xs text-stone-500">{member.whatsapp || "Sem WhatsApp"}</p>
                     </div>
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Button variant="ghost" size="icon" onClick={() => {
                         setEditingMember(member)
                         setIsSheetOpen(true)

@@ -7,17 +7,20 @@ export interface Member {
   is_claimed: boolean
   claimed_by?: string
   created_at: string
+  claimed_user?: {
+    avatar_url: string | null
+  }
 }
 
 export const memberService = {
-  async listAll() {
+  async listAll(): Promise<Member[]> {
     const { data, error } = await supabase
       .from('members')
-      .select('*')
+      .select('*, claimed_user:users!claimed_by(avatar_url)')
       .order('full_name')
     
     if (error) throw error
-    return data
+    return data as Member[]
   },
 
   async search(name: string) {
@@ -32,7 +35,7 @@ export const memberService = {
     return data
   },
 
-  async create(data: { full_name: string, whatsapp?: string }) {
+  async create(data: { full_name: string, whatsapp?: string, is_claimed?: boolean, claimed_by?: string }) {
     const { data: member, error } = await supabase
       .from('members')
       .insert(data)
@@ -77,5 +80,16 @@ export const memberService = {
     
     if (error) throw error
     return member
+  },
+
+  async getByUserId(userId: string): Promise<Member | null> {
+    const { data, error } = await supabase
+      .from('members')
+      .select('*, claimed_user:users!claimed_by(avatar_url)')
+      .eq('claimed_by', userId)
+      .maybeSingle()
+    
+    if (error) throw error
+    return data as Member | null
   }
 }

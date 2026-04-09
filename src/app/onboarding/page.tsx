@@ -9,25 +9,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, Search, UserPlus } from "lucide-react"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 
 export default function OnboardingPage() {
-  const { user, profile, loading, refreshProfile } = useAuth()
+  const { user, profile, isMember, loading, refreshProfile } = useAuth()
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState<Member[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Redirecionar se já tiver perfil ou não estiver logado
+  // Redirecionar se JÁ for membro ou não estiver logado
   useEffect(() => {
     if (!loading) {
       if (!user) {
         router.push("/")
-      } else if (profile) {
+      } else if (profile && isMember) {
+        // Se já tem perfil E já é membro, não precisa estar aqui
         router.push("/")
       }
     }
-  }, [user, profile, loading])
+  }, [user, profile, isMember, loading])
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return
@@ -44,25 +46,29 @@ export default function OnboardingPage() {
     if (!user) return
     setIsSubmitting(true)
     try {
-      // 1. Vincular na tabela members
-      await memberService.claim(member.id, user.id)
+      // 1. Criar/Atualizar perfil em public.users (upsert) - IMPORTANTE: Fazer antes do vínculo para evitar erro de FK
+      const { error: profileError } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          email: user.email!,
+          full_name: member.full_name,
+          whatsapp: member.whatsapp,
+          role: profile?.role || 'reader',
+          claimed_at: new Date().toISOString()
+        })
       
-      // 2. Criar perfil em public.users
-      await userService.createProfile({
-        id: user.id,
-        email: user.email!,
-        full_name: member.full_name,
-        whatsapp: member.whatsapp,
-        role: 'reader', // Padrão
-        claimed_at: new Date().toISOString()
-      })
+      if (profileError) throw profileError
+
+      // 2. Vincular na tabela members
+      await memberService.claim(member.id, user.id)
       
       toast.success("Perfil vinculado com sucesso!")
       await refreshProfile()
       router.push("/profile")
-    } catch (error) {
+    } catch (error: any) {
       toast.error("Erro ao vincular perfil.")
-      console.error(error)
+      console.error("Erro detalhado:", error.message || error.details || error)
     } finally {
       setIsSubmitting(false)
     }
@@ -72,15 +78,27 @@ export default function OnboardingPage() {
     if (!user) return
     setIsSubmitting(true)
     try {
-      await userService.createProfile({
-        id: user.id,
-        email: user.email!,
-        full_name: user.user_metadata.full_name || "",
-        role: 'reader',
-        is_self_registered: true
+      // 1. Criar/Atualizar perfil em public.users (upsert)
+      const { error: profileError } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          email: user.email!,
+          full_name: user.user_metadata.full_name || profile?.full_name || "",
+          role: profile?.role || 'reader',
+          is_self_registered: true
+        })
+      
+      if (profileError) throw profileError
+      
+      // 2. Criar registro na tabela members já vinculado
+      await memberService.create({
+        full_name: user.user_metadata.full_name || user.email?.split('@')[0] || "Novo Membro",
+        is_claimed: true,
+        claimed_by: user.id
       })
       
-      toast.success("Perfil criado!")
+      toast.success("Perfil criado e vinculado!")
       await refreshProfile()
       router.push("/profile")
     } catch (error) {
@@ -156,7 +174,7 @@ export default function OnboardingPage() {
             className="w-full rounded-xl border border-stone-100 h-12 text-sm text-stone-600 hover:bg-stone-50 hover:text-stone-900"
           >
             <UserPlus className="mr-2 h-4 w-4" />
-            Não estou na lista, criar novo cadastro
+            Não estou na lista, se inscrever como membro
           </Button>
         </div>
       </div>

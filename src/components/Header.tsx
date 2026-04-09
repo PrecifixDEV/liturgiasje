@@ -26,7 +26,7 @@ interface HeaderProps {
 export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container relative flex h-16 items-center justify-center px-4 max-w-md mx-auto">
+      <div className="container relative flex h-20 items-center justify-center px-4 max-w-md mx-auto">
         {/* Título Centralizado e Grande */}
         <div className="flex flex-col items-center">
           <h1 className="text-xl font-bold tracking-tight text-stone-800 sm:text-2xl">
@@ -39,10 +39,10 @@ export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none">
-                <Avatar className="h-9 w-9 cursor-pointer border-2 border-stone-200 transition-colors hover:border-stone-300">
+                <Avatar className="h-14 w-14 cursor-pointer border-2 border-stone-200 transition-colors hover:border-stone-300">
                   <AvatarImage src={user?.avatar_url} />
                   <AvatarFallback className="bg-stone-100 text-stone-600">
-                    <UserCircle className="h-6 w-6" />
+                    <UserCircle className="h-9 w-9" />
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
@@ -101,9 +101,9 @@ export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
               className="focus:outline-none transition-transform active:scale-95"
               aria-label="Fazer login com Google"
             >
-              <Avatar className="h-9 w-9 cursor-pointer border-2 border-stone-200 transition-colors hover:border-stone-300">
+              <Avatar className="h-14 w-14 cursor-pointer border-2 border-stone-200 transition-colors hover:border-stone-300">
                 <AvatarFallback className="bg-stone-100 text-stone-600">
-                  <UserCircle className="h-6 w-6" />
+                  <UserCircle className="h-9 w-9" />
                 </AvatarFallback>
               </Avatar>
             </button>

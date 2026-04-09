@@ -4,18 +4,24 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { User } from "@supabase/supabase-js"
 import { userService, UserProfile } from "@/services/userService"
+import { memberService } from "@/services/memberService"
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [isMember, setIsMember] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const fetchProfile = async (userId: string) => {
     try {
-      const data = await userService.getProfile(userId)
-      setProfile(data)
+      const [profileData, memberData] = await Promise.all([
+        userService.getProfile(userId),
+        memberService.getByUserId(userId)
+      ])
+      setProfile(profileData)
+      setIsMember(!!memberData)
     } catch (error) {
-      console.error("Erro ao buscar perfil:", error)
+      console.error("Erro ao buscar perfil/membro:", error)
     } finally {
       setLoading(false)
     }
@@ -67,6 +73,7 @@ export function useAuth() {
   return {
     user,
     profile,
+    isMember,
     loading,
     refreshProfile: () => user && fetchProfile(user.id),
     signInWithGoogle,

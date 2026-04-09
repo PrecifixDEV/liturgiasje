@@ -49,5 +49,29 @@ export const userService = {
 
     if (error) throw error
     return data
+  },
+
+  async uploadAvatar(userId: string, file: Blob): Promise<string> {
+    const fileName = `${userId}/avatar-${Date.now()}.webp`
+    
+    // 1. Upload do arquivo
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, {
+        contentType: 'image/webp',
+        upsert: true
+      })
+
+    if (uploadError) throw uploadError
+
+    // 2. Pegar URL pública
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(fileName)
+
+    // 3. Atualizar o perfil com a nova URL
+    await this.updateProfile(userId, { avatar_url: publicUrl })
+
+    return publicUrl
   }
 }

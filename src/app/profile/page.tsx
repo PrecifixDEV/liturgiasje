@@ -10,15 +10,15 @@ import { Loader2, ArrowLeft, Save, User as UserIcon, Calendar, MessageSquare, Cl
 import { toast } from "sonner"
 import { Header } from "@/components/Header"
 import { maskPhone, cn } from "@/lib/utils"
+import { ProfileImageEditor } from "@/components/profile/ProfileImageEditor"
 
-const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
-const COMMON_TIMES = ["07:00", "08:00", "09:00", "10:00", "11:00", "17:00", "18:00", "19:00", "19:30", "20:00"]
+const COMMON_TIMES = ["07:00", "09:00", "11:00", "19:00"]
 
 export default function ProfilePage() {
-  const { user, profile, loading, signInWithGoogle, signOut, refreshProfile } = useAuth()
+  const { user, profile, isMember, loading, signInWithGoogle, signOut, refreshProfile } = useAuth()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [selectedDay, setSelectedDay] = useState(6) // Padrão Domingo
+  const [selectedDay] = useState(6) // Fixo Domingo
   const [formData, setFormData] = useState({
     full_name: "",
     whatsapp: "",
@@ -113,6 +113,10 @@ export default function ProfilePage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm space-y-6">
               
+              <div className="flex flex-col items-center py-4">
+                <ProfileImageEditor />
+              </div>
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-stone-400">
@@ -157,47 +161,13 @@ export default function ProfilePage() {
                 <div className="space-y-6 pt-2">
                   <div className="flex items-center gap-2 text-stone-400">
                     <Clock className="h-3 w-3" />
-                    <label className="text-[10px] font-bold uppercase tracking-widest">Horários de Preferência</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest">Horários de Preferência (Domingo)</label>
                   </div>
 
                   <div className="space-y-6">
-                    {/* Seletor de Dias */}
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                      {DAYS.map((day, index) => {
-                        const hasPrefs = (formData.preferences?.day_preferences?.[index]?.length || 0) > 0
-                        const isSelected = selectedDay === index
-                        return (
-                          <button
-                            key={day}
-                            type="button"
-                            onClick={() => setSelectedDay(index)}
-                            className={cn(
-                              "relative flex flex-col items-center justify-center min-w-[54px] h-14 rounded-2xl border transition-all",
-                              isSelected 
-                                ? "bg-stone-800 border-stone-800 text-white shadow-md" 
-                                : "bg-white border-stone-100 text-stone-500 hover:border-stone-200"
-                            )}
-                          >
-                            <span className="text-[10px] font-bold uppercase tracking-tighter">
-                              {day.substring(0, 3)}
-                            </span>
-                            {hasPrefs && (
-                              <span className={cn(
-                                "absolute top-2 right-2 w-1.5 h-1.5 rounded-full",
-                                isSelected ? "bg-white" : "bg-stone-800"
-                              )} />
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    {/* Chips de Horários para o dia selecionado */}
+                    {/* Chips de Horários para o domingo */}
                     <div className="space-y-3">
-                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest pl-1">
-                        Horários para {DAYS[selectedDay]}
-                      </p>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {COMMON_TIMES.map((time) => {
                           const isSelected = formData.preferences?.day_preferences?.[selectedDay]?.includes(time)
                           return (
@@ -206,9 +176,9 @@ export default function ProfilePage() {
                               type="button"
                               onClick={() => toggleTimePreference(selectedDay, time)}
                               className={cn(
-                                "flex items-center justify-center h-10 px-2 rounded-xl border text-[11px] font-bold transition-all",
+                                "flex items-center justify-center h-12 px-4 rounded-2xl border text-sm font-bold transition-all",
                                 isSelected 
-                                  ? "bg-stone-100 border-stone-800 text-stone-800" 
+                                  ? "bg-stone-800 border-stone-800 text-white shadow-md" 
                                   : "bg-white border-stone-100 text-stone-500 hover:border-stone-200"
                               )}
                             >
@@ -232,6 +202,41 @@ export default function ProfilePage() {
                   Salvar Alterações
                 </Button>
               </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-stone-800">Status de Membro</h3>
+                  <p className="text-[11px] text-stone-500">
+                    {isMember 
+                      ? "Você está vinculado à lista oficial de membros." 
+                      : "Seu perfil ainda não está vinculado à lista de membros."}
+                  </p>
+                </div>
+                {isMember ? (
+                  <div className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1.5 rounded-full border border-green-100 border-none!">
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Ativo</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full border border-amber-100 border-none!">
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Pendente</span>
+                  </div>
+                )}
+              </div>
+
+              {!isMember && (
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/onboarding")}
+                  className="w-full rounded-2xl border-stone-100 text-stone-600 text-[10px] font-bold h-11 hover:bg-stone-50"
+                >
+                  <UserIcon className="h-3 w-3 mr-2 text-stone-400" />
+                  Vincular meu nome à lista
+                </Button>
+              )}
             </div>
 
             <div className="p-4 rounded-2xl bg-stone-100/50 border border-stone-200/50">
