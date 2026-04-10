@@ -6,7 +6,7 @@ import { Header } from "@/components/Header"
 import { AnnouncementCard } from "@/components/AnnouncementCard"
 import { ScheduleCard } from "@/components/ScheduleCard"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw } from "lucide-react"
 import { addMonths, format, subMonths } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -40,6 +40,7 @@ export default function Home() {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [announcements, setAnnouncements] = useState<any[]>([])
   const [swaps, setSwaps] = useState<any[]>([])
+  const [schedule, setSchedule] = useState<any[]>([])
   const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true)
   const [isLoadingSwaps, setIsLoadingSwaps] = useState(true)
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(true)
