@@ -50,11 +50,15 @@ export const userService = {
 
     if (error) throw error
 
-    // 2. Se o nome foi alterado, sincronizar com a tabela de membros
-    if (profile.full_name) {
+    // 2. Se o nome ou whatsapp foram alterados, sincronizar com a tabela de membros
+    const syncData: any = {}
+    if (profile.full_name) syncData.full_name = profile.full_name
+    if (profile.whatsapp) syncData.whatsapp = profile.whatsapp
+
+    if (Object.keys(syncData).length > 0) {
       await supabase
         .from('members')
-        .update({ full_name: profile.full_name })
+        .update(syncData)
         .eq('claimed_by', userId)
     }
 

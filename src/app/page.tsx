@@ -34,13 +34,14 @@ import {
 } from "@/components/ui/drawer"
 
 export default function Home() {
-  const { user, profile, loading, signInWithGoogle, signOut } = useAuth()
+  const { user, profile, member, loading, signInWithGoogle, signOut } = useAuth()
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [announcements, setAnnouncements] = useState<any[]>([])
-  const [schedule, setSchedule] = useState<any[]>([])
+  const [swaps, setSwaps] = useState<any[]>([])
   const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true)
+  const [isLoadingSwaps, setIsLoadingSwaps] = useState(true)
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(true)
   const [announcementToEdit, setAnnouncementToEdit] = useState<any | null>(null)
   const [announcementToDelete, setAnnouncementToDelete] = useState<string | null>(null)
@@ -50,7 +51,9 @@ export default function Home() {
   const [scheduleToDelete, setScheduleToDelete] = useState<string[] | null>(null)
   const [isDeletingSchedule, setIsDeletingSchedule] = useState(false)
   const [swapTargetSlot, setSwapTargetSlot] = useState<any | null>(null)
+  const [takeSwapTarget, setTakeSwapTarget] = useState<any | null>(null)
   const [isRequestingSwap, setIsRequestingSwap] = useState(false)
+  const [isAcceptingSwap, setIsAcceptingSwap] = useState(false)
   
   // Redirecionamento para Onboarding se não tiver perfil
   useEffect(() => {
@@ -75,6 +78,17 @@ export default function Home() {
     }
   }
 
+  // 1.1 Carregar Solicitações de Troca
+  const loadSwaps = async () => {
+    try {
+      setIsLoadingSwaps(true)
+      const data = await scheduleService.listAllSwaps()
+      setSwaps(data)
+    } finally {
+      setIsLoadingSwaps(false)
+    }
+  }
+
   // 2. Carregar Escala
   const loadSchedule = async () => {
     try {
@@ -88,6 +102,7 @@ export default function Home() {
 
   useEffect(() => {
     loadAnnouncements()
+    loadSwaps()
   }, [user?.id])
 
   useEffect(() => {
@@ -109,8 +124,73 @@ export default function Home() {
       />
       
       <main className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto px-4 py-6 space-y-8">
+        <div className="h-full overflow-y-auto px-4 py-6 space-y-8 pb-20">
           
+          {/* Seção Nova: Solicitações de Troca */}
+          {swaps.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <RefreshCw className="h-3.5 w-3.5 text-amber-600 animate-spin-slow" />
+                <h2 className="text-xs font-black uppercase tracking-widest text-amber-600">
+                  Solicitações de Troca
+                </h2>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
+                {swaps.map((swap) => {
+                  const massDate = new Date(swap.mass.date + 'T00:00:00');
+                  const roleName = (({
+                    'C': 'C',
+                    '1L': '1L',
+                    '2L': '2L',
+                    'P': 'P',
+                    'L': 'L'
+                  } as Record<string, string>)[swap.role]) || swap.role;
+
+                  return (
+                    <button
+                      key={swap.id}
+                      onClick={() => {
+                        // Navegar para o mês da troca se necessário
+                        const swapMonth = new Date(swap.mass.date).getMonth();
+                        const currentMonth = currentDate.getMonth();
+                        const swapYear = new Date(swap.mass.date).getFullYear();
+                        const currentYear = currentDate.getFullYear();
+
+                        if (swapMonth !== currentMonth || swapYear !== currentYear) {
+                          setCurrentDate(new Date(swapYear, swapMonth, 1));
+                          // Dá um tempo para o React renderizar o novo mês antes de scrolar
+                          setTimeout(() => {
+                            const el = document.getElementById(`slot-${swap.id}`);
+                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            el?.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2');
+                            setTimeout(() => el?.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2'), 2000);
+                          }, 500);
+                        } else {
+                          const el = document.getElementById(`slot-${swap.id}`);
+                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          el?.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2');
+                          setTimeout(() => el?.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2'), 2000);
+                        }
+                      }}
+                      className="flex-none w-[200px] bg-white border border-amber-100 rounded-2xl p-3 shadow-sm hover:shadow-md transition-all active:scale-95 snap-start text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="bg-amber-100 p-1.5 rounded-lg text-amber-700">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        </div>
+                        <span className="text-[10px] font-black text-amber-700 uppercase">{roleName}</span>
+                      </div>
+                      <p className="text-[11px] font-bold text-stone-800">
+                        Solicitação para {format(massDate, "dd/MM")} às {swap.mass.time.substring(0, 5)}
+                      </p>
+                      <span className="text-[9px] text-stone-400 uppercase font-bold tracking-tight">Ver na escala</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {/* Sessão 1: Mural de Recados */}
           <section className="space-y-4">
             <div className="flex items-center justify-between px-1">
@@ -205,18 +285,28 @@ export default function Home() {
                       setAnnouncementToEdit(ann)
                       setIsSheetOpen(true)
                     }}
-                    onAcceptSwap={async (slotId, annId) => {
+                    onAcceptSwap={async (slotId) => {
                       if (!user) {
                         toast.error("Faça login para aceitar trocas.")
                         return
                       }
-                      try {
-                        await scheduleService.acceptSwap(slotId, user.id)
-                        toast.success("Troca aceita com sucesso!")
-                        loadSchedule()
-                        loadAnnouncements()
-                      } catch (error) {
-                        toast.error("Erro ao aceitar troca.")
+                      
+                      // Buscar detalhes da troca na lista global de swaps
+                      const swap = swaps.find(s => s.id === slotId);
+                      
+                      if (swap) {
+                        setTakeSwapTarget({
+                          slotId,
+                          date: format(new Date(swap.mass.date + 'T00:00:00'), "dd/MM/yyyy"),
+                          time: swap.mass.time.substring(0, 5),
+                          roleName: (({
+                            'C': 'Comentarista',
+                            '1L': '1ª Leitura',
+                            '2L': '2ª Leitura',
+                            'P': 'Preces',
+                            'L': 'Leitura Única'
+                          } as Record<string, string>)[swap.role]) || swap.role
+                        });
                       }
                     }}
                   />
@@ -324,6 +414,15 @@ export default function Home() {
                     new Date(a.date).getTime() - new Date(b.date).getTime()
                   )
 
+                  // Pesos para ordenação litúrgica
+                  const roleWeights: Record<string, number> = {
+                    'C': 1,
+                    '1L': 2,
+                    'L': 2,
+                    '2L': 3,
+                    'P': 4
+                  }
+
                   return sortedDays.map((day: any) => (
                     <ScheduleCard 
                       key={day.date} 
@@ -332,7 +431,9 @@ export default function Home() {
                         id: item.id,
                         time: item.time.substring(0, 5),
                         specialTitle: item.special_description,
-                        slots: item.slots.map((s: any) => ({
+                        slots: [...item.slots].sort((a: any, b: any) => 
+                          (roleWeights[a.role] || 99) - (roleWeights[b.role] || 99)
+                        ).map((s: any) => ({
                           id: s.id,
                           role: s.role,
                           roleName: (({
@@ -347,7 +448,7 @@ export default function Home() {
                           originalReaderName: s.original_reader?.full_name,
                           isConfirmed: s.is_confirmed,
                           isSwapRequested: s.is_swap_requested,
-                          isMine: s.reader_id === user?.id
+                          isMine: s.reader_id ? s.reader_id === user?.id : (member?.id && (s.member_id === member.id))
                         }))
                       }))}
                       isAdmin={headerUser?.role === "admin"}
@@ -359,8 +460,9 @@ export default function Home() {
                         setScheduleToDelete(day.items.map((item: any) => item.id))
                       }}
                       onConfirm={async (slotId) => {
+                        if (!user) return
                         try {
-                          await scheduleService.confirmSlot(slotId)
+                          await scheduleService.confirmSlot(slotId, user.id)
                           toast.success("Presença confirmada!")
                           loadSchedule()
                         } catch (error) {
@@ -389,13 +491,32 @@ export default function Home() {
                       }}
                       onTakeSwap={async (slotId) => {
                         if (!user) return;
-                        try {
-                          await scheduleService.acceptSwap(slotId, user.id)
-                          toast.success("Você assumiu esta escala!")
-                          loadSchedule()
-                          loadAnnouncements()
-                        } catch (error) {
-                          toast.error("Erro ao assumir troca.")
+                        
+                        // Encontrar detalhes para o Drawer de confirmação
+                        let targetMass: any = null;
+                        let targetSlot: any = null;
+                        
+                        schedule.forEach(mass => {
+                          const found = mass.slots.find((s: any) => s.id === slotId);
+                          if (found) {
+                            targetMass = mass;
+                            targetSlot = found;
+                          }
+                        });
+
+                        if (targetMass && targetSlot) {
+                          setTakeSwapTarget({
+                            slotId,
+                            date: format(new Date(targetMass.date + 'T00:00:00'), "dd/MM/yyyy"),
+                            time: targetMass.time.substring(0, 5),
+                            roleName: (({
+                              'C': 'Comentarista',
+                              '1L': '1ª Leitura',
+                              '2L': '2ª Leitura',
+                              'P': 'Preces',
+                              'L': 'Leitura Única'
+                            } as Record<string, string>)[targetSlot.role]) || targetSlot.role
+                          });
                         }
                       }}
                     />
@@ -507,18 +628,9 @@ export default function Home() {
                       try {
                         await scheduleService.requestSwap(swapTargetSlot.id)
                         
-                        // Criar o aviso
-                        await announcementService.create({
-                          title: "Solicitação de Troca",
-                          content: `${profile?.full_name || 'Um leitor'} solicitou troca para a missa do dia ${swapTargetSlot.massDate} às ${swapTargetSlot.massTime} (${swapTargetSlot.description}). Quem puder assumir, clique em 'Aceitar Troca' abaixo.`,
-                          type: 'Troca',
-                          expires_at: null, // Opcional: expirar após a data da missa
-                          related_schedule_slot_id: swapTargetSlot.id
-                        } as any)
-
-                        toast.success("Solicitação enviada ao Mural!")
+                        toast.success("Solicitação de troca publicada!")
                         loadSchedule()
-                        loadAnnouncements()
+                        loadSwaps()
                         setSwapTargetSlot(null)
                       } catch (error) {
                         toast.error("Erro ao processar solicitação.")
@@ -531,6 +643,63 @@ export default function Home() {
                   </Button>
                   <DrawerClose asChild>
                     <Button variant="ghost" className="w-full text-stone-500 font-medium h-12" disabled={isRequestingSwap}>
+                      Cancelar
+                    </Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </div>
+            </DrawerContent>
+          </Drawer>
+
+          {/* Drawer de Confirmação para ASSUMIR Troca */}
+          <Drawer open={!!takeSwapTarget} onOpenChange={(open) => !open && !isAcceptingSwap && setTakeSwapTarget(null)}>
+            <DrawerContent>
+              <div className="mx-auto w-full max-w-sm">
+                <DrawerHeader className="text-center">
+                  <DrawerTitle className="text-stone-800">Assumir esta Escala?</DrawerTitle>
+                  <DrawerDescription className="text-stone-600">
+                    Ao confirmar, você assumirá o compromisso de realizar a leitura abaixo:
+                    <div className="mt-4 p-4 bg-stone-50 rounded-2xl border border-stone-100 flex flex-col gap-1 text-left">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] uppercase font-black text-stone-400">Data</span>
+                        <span className="text-sm font-bold text-stone-800">{takeSwapTarget?.date}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] uppercase font-black text-stone-400">Horário</span>
+                        <span className="text-sm font-bold text-stone-800">{takeSwapTarget?.time}</span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1 pt-1 border-t border-stone-100">
+                        <span className="text-[10px] uppercase font-black text-stone-400">Função</span>
+                        <span className="text-sm font-black text-green-700">{takeSwapTarget?.roleName}</span>
+                      </div>
+                    </div>
+                  </DrawerDescription>
+                </DrawerHeader>
+                <DrawerFooter className="flex flex-col gap-2 pb-8">
+                  <Button 
+                    variant="default"
+                    className="w-full font-bold h-12 rounded-xl bg-green-700 hover:bg-green-800 text-white shadow-lg shadow-green-100"
+                    disabled={isAcceptingSwap}
+                    onClick={async () => {
+                      if (!takeSwapTarget || !user) return
+                      setIsAcceptingSwap(true)
+                      try {
+                        await scheduleService.acceptSwap(takeSwapTarget.slotId, user.id, member?.id)
+                        toast.success("Você assumiu a escala! Presença confirmada.")
+                        loadSchedule()
+                        loadSwaps()
+                        setTakeSwapTarget(null)
+                      } catch (error) {
+                        toast.error("Erro ao assumir troca.")
+                      } finally {
+                        setIsAcceptingSwap(false)
+                      }
+                    }}
+                  >
+                    {isAcceptingSwap ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar e Assumir"}
+                  </Button>
+                  <DrawerClose asChild>
+                    <Button variant="ghost" className="w-full text-stone-500 font-medium h-12" disabled={isAcceptingSwap}>
                       Cancelar
                     </Button>
                   </DrawerClose>

@@ -121,7 +121,7 @@ export default function ProfilePage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-stone-400">
                     <UserIcon className="h-3 w-3" />
-                    <label className="text-[10px] font-bold uppercase tracking-widest">Nome Completo</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest">Nome e Sobrenome</label>
                   </div>
                   <Input 
                     value={formData.full_name}

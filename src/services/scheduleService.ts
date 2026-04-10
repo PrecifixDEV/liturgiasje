@@ -27,6 +27,7 @@ export const scheduleService = {
       .lte('date', format(end, 'yyyy-MM-dd'))
       .order('date', { ascending: true })
       .order('time', { ascending: true })
+      .order('created_at', { foreignTable: 'schedule_slots', ascending: true })
 
     if (massesError) {
       console.error("Erro ao buscar escala:", massesError)
@@ -62,12 +63,15 @@ export const scheduleService = {
     if (memberIds.size > 0) {
       const { data: members, error: membersError } = await supabase
         .from('members')
-        .select('id, full_name')
+        .select('id, full_name, user:users!claimed_by(full_name)')
         .in('id', Array.from(memberIds))
 
       if (membersError) console.error("Erro ao buscar membros:", membersError)
       if (members) {
-        memberNames = Object.fromEntries(members.map(m => [m.id, { full_name: m.full_name }]))
+        memberNames = Object.fromEntries(members.map(m => [
+          m.id, 
+          { full_name: (m as any).user?.full_name || m.full_name }
+        ]))
       }
     }
 
@@ -90,13 +94,23 @@ export const scheduleService = {
     return masses || []
   },
 
-  async confirmSlot(slotId: string) {
-    const { error } = await supabase
+  async confirmSlot(slotId: string, userId: string) {
+    const { data, error } = await supabase
       .from('schedule_slots')
-      .update({ is_confirmed: true })
+      .update({ 
+        is_confirmed: true,
+        reader_id: userId
+      })
       .eq('id', slotId)
+      .select()
 
     if (error) throw error
+    
+    if (!data || data.length === 0) {
+      throw new Error("Não foi possível confirmar. Verifique suas permissões no banco de dados.")
+    }
+
+    return data[0]
   },
 
   async requestSwap(slotId: string) {
@@ -196,6 +210,28 @@ export const scheduleService = {
     }
   },
 
+  async listAllSwaps() {
+    const { data, error } = await supabase
+      .from('schedule_slots')
+      .select(`
+        id,
+        role,
+        reader_id,
+        is_swap_requested,
+        mass:masses (
+          date,
+          time,
+          special_description
+        )
+      `)
+      .eq('is_swap_requested', true)
+      .gte('mass.date', new Date().toISOString().split('T')[0]) // Apenas trocas futuras ou hoje
+      .order('mass(date)', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  },
+
   async deleteMass(massId: string) {
     const { error } = await supabase
       .from('masses')
@@ -205,27 +241,19 @@ export const scheduleService = {
     if (error) throw error
   },
 
-  async acceptSwap(slotId: string, newReaderId: string) {
+  async acceptSwap(slotId: string, newReaderId: string, newMemberId?: string) {
     // 1. Atualizar o slot
-    const { error: slotError } = await supabase
+    const { data: slot, error: slotError } = await supabase
       .from('schedule_slots')
       .update({ 
         reader_id: newReaderId,
+        member_id: newMemberId || undefined,
         is_swap_requested: false,
-        is_confirmed: false 
+        is_confirmed: true 
       })
       .eq('id', slotId)
+      .select()
 
     if (slotError) throw slotError
-
-    // 2. Remover aviso vinculado (se houver)
-    const { error: annError } = await supabase
-      .from('announcements')
-      .delete()
-      .eq('related_schedule_slot_id', slotId)
-
-    if (annError) {
-      console.error("Erro ao remover aviso de troca:", annError)
-    }
   }
 }

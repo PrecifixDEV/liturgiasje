@@ -9,6 +9,7 @@ import { memberService } from "@/services/memberService"
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [member, setMember] = useState<any | null>(null)
   const [isMember, setIsMember] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -19,6 +20,7 @@ export function useAuth() {
         memberService.getByUserId(userId)
       ])
       setProfile(profileData)
+      setMember(memberData)
       setIsMember(!!memberData)
     } catch (error) {
       console.error("Erro ao buscar perfil/membro:", error)
@@ -73,6 +75,7 @@ export function useAuth() {
   return {
     user,
     profile,
+    member,
     isMember,
     loading,
     refreshProfile: () => user && fetchProfile(user.id),

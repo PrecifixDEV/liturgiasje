@@ -16,23 +16,31 @@ export const memberService = {
   async listAll(): Promise<Member[]> {
     const { data, error } = await supabase
       .from('members')
-      .select('*, claimed_user:users!claimed_by(avatar_url)')
+      .select('*, claimed_user:users!claimed_by(full_name, avatar_url)')
       .order('full_name')
     
     if (error) throw error
-    return data as Member[]
+    
+    return (data || []).map(m => ({
+      ...m,
+      full_name: (m as any).claimed_user?.full_name || m.full_name
+    })) as Member[]
   },
 
   async search(name: string) {
     const { data, error } = await supabase
       .from('members')
-      .select('*')
+      .select('*, claimed_user:users!claimed_by(full_name, avatar_url)')
       .ilike('full_name', `%${name}%`)
       .eq('is_claimed', false)
       .limit(10)
     
     if (error) throw error
-    return data
+
+    return (data || []).map(m => ({
+      ...m,
+      full_name: (m as any).claimed_user?.full_name || m.full_name
+    }))
   },
 
   async create(data: { full_name: string, whatsapp?: string, is_claimed?: boolean, claimed_by?: string }) {
@@ -85,11 +93,16 @@ export const memberService = {
   async getByUserId(userId: string): Promise<Member | null> {
     const { data, error } = await supabase
       .from('members')
-      .select('*, claimed_user:users!claimed_by(avatar_url)')
+      .select('*, claimed_user:users!claimed_by(full_name, avatar_url)')
       .eq('claimed_by', userId)
       .maybeSingle()
     
     if (error) throw error
-    return data as Member | null
+    if (!data) return null
+
+    return {
+      ...data,
+      full_name: (data as any).claimed_user?.full_name || data.full_name
+    } as Member
   }
 }

@@ -92,58 +92,47 @@ export function ScheduleCard({
 
               <div className="divide-y divide-stone-100">
                 {item.slots.map((slot) => (
-                  <div 
-                    key={slot.id} 
-                    className={cn(
-                      "flex flex-col px-4 py-3 space-y-1 transition-colors",
-                      slot.isConfirmed ? "bg-green-50/70 border-l-4 border-l-green-600" : ""
-                    )}
-                  >
+                    <div 
+                      key={slot.id} 
+                      id={`slot-${slot.id}`}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-2xl border border-stone-100/10 transition-all",
+                        slot.isConfirmed && slot.isMine ? "bg-green-50 border-l-4 border-l-green-600" : "bg-stone-50/40"
+                      )}
+                    >
                     <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-3">
-                          <div className="relative">
-                            {slot.avatarUrl ? (
-                              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm">
-                                <img src={slot.avatarUrl} alt={slot.readerName} className="h-full w-full object-cover" />
-                              </div>
-                            ) : (
-                              <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black border transition-all ${
-                                slot.isSwapRequested 
-                                  ? "bg-amber-100 text-amber-700 border-amber-200 animate-pulse ring-2 ring-amber-100 ring-offset-1" 
-                                  : slot.isConfirmed
-                                    ? "bg-green-100 text-green-700 border-green-200"
-                                    : "bg-stone-50 text-stone-600 border-stone-200"
-                              }`}>
-                                {slot.isSwapRequested ? (
-                                  <RefreshCw className="h-4 w-4" />
-                                ) : (
-                                  slot.role
-                                )}
-                              </div>
-                            )}
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[11px] font-black border transition-all ${
+                            slot.isSwapRequested 
+                              ? "bg-amber-100 text-amber-700 border-amber-200 animate-pulse" 
+                              : slot.isConfirmed
+                                ? "bg-green-100 text-green-700 border-green-200"
+                                : "bg-stone-50 text-stone-600 border-stone-100"
+                          }`}>
+                            {slot.isSwapRequested ? <RefreshCw className="h-4 w-4" /> : slot.role}
                           </div>
                           
-                          <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
                             <span className="text-[13px] font-bold text-stone-800 leading-tight truncate">
                               {slot.readerName || "---"}
                             </span>
+                            {slot.avatarUrl && (
+                              <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm ml-1">
+                                <img src={slot.avatarUrl} alt={slot.readerName} className="h-full w-full object-cover" />
+                              </div>
+                            )}
                             {slot.originalReaderName && slot.readerName !== slot.originalReaderName && (
-                              <span className="text-[9px] font-medium text-stone-400 italic">
-                                substituiu {slot.originalReaderName}
+                              <span className="text-[9px] font-medium text-stone-400 italic shrink-0">
+                                (subst. {slot.originalReaderName})
                               </span>
                             )}
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          {slot.isConfirmed && (
-                            <div className="flex items-center gap-1 text-[10px] font-black text-green-600 uppercase tracking-tighter">
-                              <CheckCircle className="h-4 w-4 fill-green-50" />
-                              Confirmado
-                            </div>
-                          )}
+                          {/* Botão Confirmar/Trocar/Assumir */}
                         
-                        {slot.isMine && !slot.isConfirmed && !slot.isSwapRequested && (
+                        {slot.isMine && !slot.isSwapRequested && (
                           <div className="flex items-center gap-1.5">
                             <Button
                               variant="ghost"
@@ -153,14 +142,16 @@ export function ScheduleCard({
                             >
                               TROCAR
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-3 text-[10px] font-bold bg-green-700 text-white hover:bg-green-800 rounded-lg shadow-sm"
-                              onClick={() => onConfirm?.(slot.id)}
-                            >
-                              CONFIRMAR
-                            </Button>
+                            {!slot.isConfirmed && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-3 text-[10px] font-bold bg-green-700 text-white hover:bg-green-800 rounded-lg shadow-sm"
+                                onClick={() => onConfirm?.(slot.id)}
+                              >
+                                CONFIRMAR
+                              </Button>
+                            )}
                           </div>
                         )}
 
