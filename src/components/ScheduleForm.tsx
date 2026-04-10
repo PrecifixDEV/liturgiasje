@@ -35,6 +35,7 @@ interface ScheduleFormProps {
   currentMonth: Date
   onSuccess: () => void
   onClose: () => void
+  initialData?: any
 }
 
 interface Slot {
@@ -46,11 +47,17 @@ interface Slot {
   isOpen: boolean
 }
 
-export function ScheduleForm({ currentMonth, onSuccess, onClose }: ScheduleFormProps) {
+interface Session {
+  dbId?: string
+  tempId: string
+  time: string
+  description: string
+  slots: Slot[]
+}
+
+export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: ScheduleFormProps) {
   const [date, setDate] = useState("")
-  const [time, setTime] = useState("")
-  const [description, setDescription] = useState("")
-  const [slots, setSlots] = useState<Slot[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [usageCounts, setUsageCounts] = useState<Record<string, number>>({})
   const [isSaving, setIsSaving] = useState(false)
@@ -58,9 +65,50 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose }: ScheduleFormP
 
   const monthRef = format(currentMonth, "yyyy-MM")
 
+  const createEmptySession = (): Session => ({
+    tempId: Math.random().toString(36).substring(2, 9),
+    time: "",
+    description: "",
+    slots: []
+  })
+
   useEffect(() => {
     loadInitialData()
   }, [])
+
+  useEffect(() => {
+    if (initialData && Array.isArray(initialData)) {
+      setDate(initialData[0].date)
+      
+      const mappedSessions = initialData.map((item: any) => {
+        const mappedSlots = item.slots.map((s: any) => {
+          let roleType: "C" | "L" | "P" = "L"
+          if (s.role.includes('C')) roleType = "C"
+          else if (s.role.includes('P')) roleType = "P"
+
+          return {
+            id: s.id,
+            roleType,
+            roleLabel: s.role,
+            memberId: s.member_id || s.memberId,
+            memberName: s.reader_name || s.memberName || s.reader?.full_name,
+            isOpen: false
+          }
+        })
+
+        return {
+          dbId: item.id,
+          tempId: Math.random().toString(36).substring(2, 9),
+          time: item.time?.substring(0, 5) || "",
+          description: item.special_description || item.specialTitle || "",
+          slots: mappedSlots
+        }
+      })
+      setSessions(mappedSessions)
+    } else {
+      setSessions([createEmptySession()])
+    }
+  }, [initialData])
 
   const loadInitialData = async () => {
     try {
@@ -89,7 +137,29 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose }: ScheduleFormP
     })
   }
 
-  const addSlot = (roleType: "C" | "L" | "P") => {
+  const addSession = () => {
+    setSessions([...sessions, createEmptySession()])
+  }
+
+  const removeSession = async (tempId: string, dbId?: string) => {
+    if (dbId) {
+      if (!confirm("Deseja realmente excluir este horário permanentemente?")) return
+      try {
+        await scheduleService.deleteMass(dbId)
+        toast.success("Horário excluído do banco de dados.")
+      } catch (error) {
+        toast.error("Erro ao excluir horário.")
+        return
+      }
+    }
+    setSessions(sessions.filter(s => s.tempId !== tempId))
+  }
+
+  const updateSessionField = (tempId: string, field: keyof Session, value: any) => {
+    setSessions(sessions.map(s => s.tempId === tempId ? { ...s, [field]: value } : s))
+  }
+
+  const addSlot = (sessionTempId: string, roleType: "C" | "L" | "P") => {
     const newSlot: Slot = {
       id: Math.random().toString(36).substr(2, 9),
       roleType,
@@ -98,226 +168,285 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose }: ScheduleFormP
       memberName: "",
       isOpen: false
     }
-    const updatedSlots = [...slots, newSlot]
-    setSlots(updateRoleLabels(updatedSlots))
+    setSessions(sessions.map(sess => {
+      if (sess.tempId === sessionTempId) {
+        const updatedSlots = [...sess.slots, newSlot]
+        return { ...sess, slots: updateRoleLabels(updatedSlots) }
+      }
+      return sess
+    }))
   }
 
-  const removeSlot = (id: string) => {
-    const updatedSlots = slots.filter(s => s.id !== id)
-    setSlots(updateRoleLabels(updatedSlots))
+  const removeSlot = (sessionTempId: string, slotId: string) => {
+    setSessions(sessions.map(sess => {
+      if (sess.tempId === sessionTempId) {
+        const updatedSlots = sess.slots.filter(s => s.id !== slotId)
+        return { ...sess, slots: updateRoleLabels(updatedSlots) }
+      }
+      return sess
+    }))
   }
 
-  const updateSlotMember = (slotId: string, member: Member) => {
-    const updatedSlots = slots.map(s => 
-      s.id === slotId ? { ...s, memberId: member.id, memberName: member.full_name, isOpen: false } : s
-    )
-    setSlots(updatedSlots)
+  const updateSlotMember = (sessionTempId: string, slotId: string, member: Member) => {
+    setSessions(sessions.map(sess => {
+      if (sess.tempId === sessionTempId) {
+        const updatedSlots = sess.slots.map(s => 
+          s.id === slotId ? { ...s, memberId: member.id, memberName: member.full_name, isOpen: false } : s
+        )
+        return { ...sess, slots: updatedSlots }
+      }
+      return sess
+    }))
   }
 
-  const setSlotPopoverOpen = (slotId: string, isOpen: boolean) => {
-    const updatedSlots = slots.map(s => 
-      s.id === slotId ? { ...s, isOpen } : s
-    )
-    setSlots(updatedSlots)
+  const setSlotPopoverOpen = (sessionTempId: string, slotId: string, isOpen: boolean) => {
+    setSessions(sessions.map(sess => {
+      if (sess.tempId === sessionTempId) {
+        const updatedSlots = sess.slots.map(s => 
+          s.id === slotId ? { ...s, isOpen } : s
+        )
+        return { ...sess, slots: updatedSlots }
+      }
+      return sess
+    }))
   }
 
   const handleSaveMass = async () => {
-    if (!date || !time) {
-      toast.error("Preencha data e horário")
+    if (!date) {
+      toast.error("Preencha a data")
       return
     }
 
-    if (slots.length === 0) {
-      toast.error("Adicione pelo menos um leitor")
-      return
-    }
-
-    const unassignedSlot = slots.find(s => !s.memberId)
-    if (unassignedSlot) {
-      toast.error(`Escolha um leitor para ${unassignedSlot.roleLabel}`)
-      return
+    // Validações
+    for (const sess of sessions) {
+      if (!sess.time) {
+        toast.error("Preencha o horário de todas as missas")
+        return
+      }
+      
+      // Se houver slots adicionados, eles precisam ter um leitor selecionado
+      const unassigned = sess.slots.find(s => !s.memberId)
+      if (unassigned) {
+        toast.error(`Escolha um leitor para ${unassigned.roleLabel} na missa das ${sess.time}`)
+        return
+      }
     }
 
     setIsSaving(true)
     try {
-      await scheduleService.createMassWithSlots({
-        date,
-        time: `${time}:00`,
-        special_description: description,
-        month_reference: monthRef
-      }, slots.map(s => ({
-        role: s.roleLabel,
-        member_id: s.memberId
-      })))
+      // Salva cada sessão sequencialmente
+      for (const sess of sessions) {
+        const massData = {
+          date,
+          time: `${sess.time}:00`,
+          special_description: sess.description,
+          month_reference: monthRef
+        }
+        
+        const slotsData = sess.slots.map(s => ({
+          role: s.roleLabel,
+          member_id: s.memberId
+        }))
 
-      toast.success("Missa salva com sucesso!")
+        if (sess.dbId) {
+          await scheduleService.updateMass(sess.dbId, massData, slotsData)
+        } else {
+          await scheduleService.createMassWithSlots(massData, slotsData)
+        }
+      }
+
+      toast.success("Escala salva com sucesso!")
       onSuccess()
-      onClose() // Fecha o Sheet após salvar
+      onClose()
     } catch (error) {
-      toast.error("Erro ao salvar missa. Tente novamente.")
+      toast.error("Erro ao salvar escala. Tente novamente.")
     } finally {
       setIsSaving(false)
     }
   }
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
-      <div className="flex-1 space-y-6 overflow-y-auto px-1 pb-20">
+    <div className="flex flex-col h-full relative overflow-hidden bg-stone-50/50">
+      {/* Área de Conteúdo com Scroll */}
+      <div className="flex-1 overflow-y-auto space-y-4 px-6 pt-1 pb-8">
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Data</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
-                <Input 
-                  type="date" 
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="pl-10 h-10 rounded-xl"
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Horário</Label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
-                <Input 
-                  type="time" 
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="pl-10 h-10 rounded-xl"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Descrição / Título (Opcional)</Label>
+          
+          {/* Campo de Data (único para o card) */}
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Data da Escala</Label>
             <div className="relative">
-              <Type className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+              <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
               <Input 
-                placeholder="Ex: Missa de Ramos, Com Crianças..." 
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="pl-10 h-10 rounded-xl"
+                type="date" 
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="pl-10 h-10 rounded-xl bg-white border-stone-200"
               />
             </div>
           </div>
 
-          <div className="h-px bg-stone-100 my-2" />
+          <div className="h-px bg-stone-100 mt-1" />
 
-          {/* Lista de Slots */}
-          <div className="space-y-3">
-            {slots.map((slot) => (
-              <div key={slot.id} className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 font-black text-sm border border-amber-200 shadow-sm">
-                  {slot.roleLabel}
-                </div>
-                
-                <div className="flex-1">
-                  <Popover open={slot.isOpen} onOpenChange={(open) => setSlotPopoverOpen(slot.id, open)}>
-                    <PopoverTrigger render={
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full h-10 justify-between font-bold rounded-xl border-stone-200",
-                          !slot.memberId && "text-stone-400 font-normal"
-                        )}
-                      >
-                        <div className="flex items-center truncate">
-                          <User className="mr-2 h-4 w-4 text-stone-400 shrink-0" />
-                          <span className="truncate">
-                            {slot.memberId ? slot.memberName : "Selecionar Leitor..."}
-                          </span>
-                        </div>
-                        <Search className="ml-2 h-3.5 w-3.5 opacity-50 shrink-0" />
-                      </Button>
-                    } />
-                    <PopoverContent className="w-[300px] p-0" align="start">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Pesquisar leitor..." 
-                          value={searchTerm}
-                          onValueChange={setSearchTerm}
-                        />
-                        <CommandList>
-                          <CommandEmpty>Nenhum leitor encontrado.</CommandEmpty>
-                          <CommandGroup>
-                            {members.map((member) => (
-                              <CommandItem
-                                key={member.id}
-                                value={member.full_name}
-                                onSelect={() => {
-                                  updateSlotMember(slot.id, member)
-                                  setSearchTerm("")
-                                }}
-                                className="flex items-center justify-between"
-                              >
-                                <span className="font-medium">{member.full_name}</span>
-                                {usageCounts[member.id] > 0 && (
-                                  <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-md border border-amber-200">
-                                    {usageCounts[member.id]}x
-                                  </span>
-                                )}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-10 w-10 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl shrink-0"
-                  onClick={() => removeSlot(slot.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+          {/* Lista de Sessões (Horários) */}
+          {sessions.map((sess, sessIndex) => (
+            <div key={sess.tempId} className="space-y-3 p-4 rounded-2xl border border-stone-200 bg-white relative shadow-sm">
+              
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] uppercase font-black text-stone-400 tracking-widest">
+                  Horário #{sessIndex + 1}
+                </span>
+                {sessions.length > 1 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-[10px] font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-2"
+                    onClick={() => removeSession(sess.tempId, sess.dbId)}
+                  >
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    Excluir
+                  </Button>
+                )}
               </div>
-            ))}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Horário</Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+                    <Input 
+                      type="time" 
+                      value={sess.time}
+                      onChange={(e) => updateSessionField(sess.tempId, 'time', e.target.value)}
+                      className="pl-10 h-10 rounded-xl bg-stone-50/50"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Descrição</Label>
+                  <div className="relative">
+                    <Type className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+                    <Input 
+                      placeholder="Ex: Ramos" 
+                      value={sess.description}
+                      onChange={(e) => updateSessionField(sess.tempId, 'description', e.target.value)}
+                      className="pl-10 h-10 rounded-xl bg-stone-50/50"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Lista de Slots da Sessão */}
+              <div className="space-y-1.5 pt-1">
+                {sess.slots.map((slot) => (
+                  <div key={slot.id} className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 font-black text-[10px] border border-amber-200">
+                      {slot.roleLabel}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <Popover open={slot.isOpen} onOpenChange={(open) => setSlotPopoverOpen(sess.tempId, slot.id, open)}>
+                        <PopoverTrigger render={
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full h-8 justify-between font-bold rounded-lg border-stone-200 bg-white px-2",
+                              !slot.memberId && "text-stone-400 font-normal"
+                            )}
+                          >
+                            <div className="flex items-center truncate">
+                              <User className="mr-2 h-3.5 w-3.5 text-stone-400 shrink-0" />
+                              <span className="truncate text-[11px]">
+                                {slot.memberId ? slot.memberName : "Selecionar..."}
+                              </span>
+                            </div>
+                            <Search className="ml-2 h-3 w-3 opacity-50 shrink-0" />
+                          </Button>
+                        } />
+                        <PopoverContent className="w-[300px] p-0" align="start">
+                          <Command>
+                            <CommandInput 
+                              placeholder="Pesquisar leitor..." 
+                              value={searchTerm}
+                              onValueChange={setSearchTerm}
+                            />
+                            <CommandList>
+                              <CommandEmpty>Nenhum leitor encontrado.</CommandEmpty>
+                              <CommandGroup>
+                                {members.map((member) => (
+                                  <CommandItem
+                                    key={member.id}
+                                    value={member.full_name}
+                                    onSelect={() => {
+                                      updateSlotMember(sess.tempId, slot.id, member)
+                                      setSearchTerm("")
+                                    }}
+                                    className="flex items-center justify-between"
+                                  >
+                                    <span className="font-medium">{member.full_name}</span>
+                                    {usageCounts[member.id] > 0 && (
+                                      <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-md">
+                                        {usageCounts[member.id]}x
+                                      </span>
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-stone-300 hover:text-red-500 rounded-lg"
+                      onClick={() => removeSlot(sess.tempId, slot.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Botão de Adicionar Leitura (Dentro da Sessão) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger render={
+                  <Button variant="outline" size="sm" className="h-7 px-3 font-bold text-[9px] uppercase tracking-wider rounded-lg border-stone-200 text-stone-500 hover:bg-stone-50">
+                    <Plus className="mr-1 h-3 w-3" />
+                    Adicionar Leitura
+                  </Button>
+                } />
+                <DropdownMenuContent align="start" className="rounded-xl p-1.5">
+                  <DropdownMenuItem onClick={() => addSlot(sess.tempId, "C")} className="font-bold text-xs text-stone-700">Comentarista (C)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => addSlot(sess.tempId, "L")} className="font-bold text-xs text-stone-700">Leitor (L)</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => addSlot(sess.tempId, "P")} className="font-bold text-xs text-stone-700">Preces (P)</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+            </div>
+          ))}
+
+          {/* Botão de Adicionar outro Horário */}
+          <div className="pt-1">
+            <Button 
+              variant="outline" 
+              onClick={addSession}
+              className="w-full h-10 border-dashed border-stone-300 text-stone-500 font-bold rounded-xl hover:bg-stone-100 transition-all text-xs"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar outro Horário
+            </Button>
           </div>
 
-          {/* Botões +L e +Leitor */}
-          <div className="flex items-center gap-2 pt-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger render={
-                <Button variant="secondary" size="sm" className="h-9 px-3 font-black text-[11px] uppercase tracking-wider rounded-xl bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 transition-all">
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Cargo (+L)
-                </Button>
-              } />
-              <DropdownMenuContent align="start" className="rounded-xl p-1.5">
-                <DropdownMenuItem 
-                  onClick={() => addSlot("C")}
-                  className="font-bold text-stone-700 rounded-lg"
-                >
-                  Comentarista (C)
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => addSlot("L")}
-                  className="font-bold text-stone-700 rounded-lg"
-                >
-                  Leitor (L)
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => addSlot("P")}
-                  className="font-bold text-stone-700 rounded-lg"
-                >
-                  Preces (P)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
       </div>
 
-      <div className="mt-auto pt-4 border-t border-stone-200 bg-white/50 backdrop-blur-md -mx-1 -mb-1 p-4 rounded-b-2xl">
+      {/* Rodapé Fixo (Sticky) */}
+      <div className="shrink-0 bg-white border-t border-stone-200 p-4 pb-5 shadow-[0_-10px_40px_rgba(0,0,0,0.04)] z-50">
         <Button 
-          disabled={isSaving || !date || !time || slots.length === 0}
-          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-black tracking-widest uppercase text-xs rounded-xl shadow-xl shadow-green-200/50 transition-all active:scale-95 disabled:opacity-50"
+          disabled={isSaving || !date || sessions.some(s => !s.time || s.slots.some(slot => !slot.memberId))}
+          className="w-full h-11 bg-green-600 hover:bg-green-700 text-white font-black tracking-widest uppercase text-[10px] rounded-xl shadow-xl shadow-green-200/50 transition-all active:scale-95 disabled:opacity-50"
           onClick={handleSaveMass}
         >
           {isSaving ? (
@@ -325,7 +454,7 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose }: ScheduleFormP
           ) : (
             <>
               <CheckCircle2 className="mr-2 h-4 w-4" />
-              Salvar Missa
+              Salvar Escala do Dia
             </>
           )}
         </Button>

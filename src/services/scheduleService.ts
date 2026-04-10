@@ -134,7 +134,6 @@ export const scheduleService = {
     date: string; 
     time: string; 
     special_description?: string; 
-    external_group?: string;
     month_reference: string;
   }, slots: { role: string; member_id: string }[]) {
     // 1. Criar a missa
@@ -162,5 +161,47 @@ export const scheduleService = {
     }
 
     return mass
+  },
+
+  async updateMass(massId: string, massData: any, slots: { role: string; member_id: string }[]) {
+    // 1. Atualizar a missa
+    const { error: massError } = await supabase
+      .from('masses')
+      .update(massData)
+      .eq('id', massId)
+
+    if (massError) throw massError
+
+    // 2. Remover slots antigos
+    const { error: deleteError } = await supabase
+      .from('schedule_slots')
+      .delete()
+      .eq('mass_id', massId)
+
+    if (deleteError) throw deleteError
+
+    // 3. Inserir novos slots
+    if (slots.length > 0) {
+      const slotsToInsert = slots.map(slot => ({
+        mass_id: massId,
+        role: slot.role,
+        member_id: slot.member_id
+      }))
+
+      const { error: slotsError } = await supabase
+        .from('schedule_slots')
+        .insert(slotsToInsert)
+
+      if (slotsError) throw slotsError
+    }
+  },
+
+  async deleteMass(massId: string) {
+    const { error } = await supabase
+      .from('masses')
+      .delete()
+      .eq('id', massId)
+    
+    if (error) throw error
   }
 }

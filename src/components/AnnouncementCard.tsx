@@ -57,14 +57,14 @@ export function AnnouncementCard({
   const shouldShowGlow = isLoggedIn && !isRead;
 
   return (
-    <Card className={`overflow-hidden transition-all duration-500 ${
+    <Card className={`overflow-hidden p-0 gap-0 transition-all duration-500 ${
       shouldShowGlow 
         ? `${isExpanded ? "border-amber-400 bg-white shadow-sm" : "border-amber-400 bg-white shadow-md animate-glow-pulse ring-2 ring-amber-100 ring-offset-1"}` 
         : isRead ? "border-green-500 bg-white/50 shadow-sm hover:bg-white/80" : "border-stone-200 bg-white/80 shadow-sm"
     }`}>
       {/* Barra de Ações Administrativas (Admin Only) */}
       {isAdmin && (
-        <div className="flex items-center justify-between border-b border-stone-100 bg-stone-50/50 px-3 py-1.5">
+        <div className="flex items-center justify-between border-b border-stone-100 bg-stone-50/50 px-3 py-0.5">
           {/* Esquerda: Visualizações */}
           <Popover>
             <PopoverTrigger render={
@@ -120,7 +120,7 @@ export function AnnouncementCard({
             {/* Expiração */}
             <Popover>
               <PopoverTrigger render={
-                <button className="flex items-center gap-1.5 text-[10px] font-bold text-stone-600 hover:text-stone-900 bg-white px-2 py-1 rounded-lg border border-stone-200 transition-colors">
+                <button className="flex items-center gap-1.5 text-[10px] font-bold text-stone-600 hover:text-stone-900 bg-white px-2 py-0.5 rounded-lg border border-stone-200 transition-colors">
                   <Clock className="h-3 w-3 text-red-500" />
                   {expires_at ? `até ${format(new Date(expires_at), "dd/MM/yyyy", { locale: ptBR })}` : "Sem expiração"}
                 </button>
@@ -154,11 +154,11 @@ export function AnnouncementCard({
           disabled={!isLoggedIn}
         >
           <AccordionTrigger 
-            className={`px-4 py-3 hover:no-underline ${!isLoggedIn ? 'cursor-default pointer-events-none' : ''}`}
+            className={`px-3 py-2 hover:no-underline ${!isLoggedIn ? 'cursor-default pointer-events-none' : ''}`}
             hideChevron={!isLoggedIn}
           >
-            <div className="flex items-center gap-3 text-left w-full pr-2">
-              <div className={`rounded-full p-2.5 shrink-0 ${type === 'Troca' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+            <div className="flex items-center gap-2 text-left w-full pr-2">
+              <div className={`rounded-full p-2 shrink-0 ${type === 'Troca' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
                 <Megaphone className="h-4 w-4" />
               </div>
               <div className="flex flex-col flex-1 min-w-0">
@@ -176,8 +176,8 @@ export function AnnouncementCard({
               </div>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 pt-0">
-            <div className="space-y-4 pt-2">
+          <AccordionContent className="px-3 pb-3 pt-0">
+            <div className="space-y-2 pt-1.5">
               <p className="text-sm leading-relaxed text-stone-600 whitespace-pre-wrap">
                 {content}
               </p>
@@ -232,7 +232,7 @@ export function AnnouncementCard({
               )}
 
               {/* Autor do Recado */}
-              <div className="flex items-center justify-end px-1 pt-2">
+              <div className="flex items-center justify-end px-1 pt-1">
                 <span className="text-[10px] font-medium text-stone-400 italic">
                   Publicado por: {authorName || 'Administração'}
                 </span>

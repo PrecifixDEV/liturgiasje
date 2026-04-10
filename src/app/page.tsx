@@ -46,6 +46,9 @@ export default function Home() {
   const [announcementToDelete, setAnnouncementToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isScheduleSheetOpen, setIsScheduleSheetOpen] = useState(false)
+  const [scheduleToEdit, setScheduleToEdit] = useState<any | null>(null)
+  const [scheduleToDelete, setScheduleToDelete] = useState<string[] | null>(null)
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState(false)
   
   // Redirecionamento para Onboarding se não tiver perfil
   useEffect(() => {
@@ -103,8 +106,8 @@ export default function Home() {
         onSignOut={signOut}
       />
       
-      <main className="flex-1 overflow-auto">
-        <div className="container max-w-md mx-auto px-4 py-6 space-y-8 pb-20">
+      <main className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto px-4 py-6 space-y-8">
           
           {/* Sessão 1: Mural de Recados */}
           <section className="space-y-4">
@@ -119,7 +122,7 @@ export default function Home() {
                     <Plus className="mr-1 h-3.5 w-3.5" />
                     Adicionar Recado
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-6">
+                  <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-6 overflow-y-auto">
                     <SheetHeader>
                       <SheetTitle className="text-stone-800">Novo Aviso</SheetTitle>
                     </SheetHeader>
@@ -158,7 +161,7 @@ export default function Home() {
               )}
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               {isLoadingAnnouncements ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-stone-300" />
@@ -188,63 +191,63 @@ export default function Home() {
                       try {
                         await announcementService.update(id, data)
                         toast.success("Aviso atualizado!")
-                    loadAnnouncements()
-                  } catch (error) {
-                    toast.error("Erro ao atualizar aviso.")
-                  }
-                }}
-                onDelete={(id) => setAnnouncementToDelete(id)}
-                onEdit={(ann) => {
-                  setAnnouncementToEdit(ann)
-                  setIsSheetOpen(true)
-                }}
-              />
-            ))
-          )}
-        </div>
-      </section>
+                        loadAnnouncements()
+                      } catch (error) {
+                        toast.error("Erro ao atualizar aviso.")
+                      }
+                    }}
+                    onDelete={(id) => setAnnouncementToDelete(id)}
+                    onEdit={(ann) => {
+                      setAnnouncementToEdit(ann)
+                      setIsSheetOpen(true)
+                    }}
+                  />
+                ))
+              )}
+            </div>
+          </section>
 
-      {/* Drawer de Confirmação de Exclusão */}
-      <Drawer open={!!announcementToDelete} onOpenChange={(open) => !open && setAnnouncementToDelete(null)}>
-        <DrawerContent>
-          <div className="mx-auto w-full max-w-sm">
-            <DrawerHeader className="text-center">
-              <DrawerTitle className="text-stone-800">Excluir Recado?</DrawerTitle>
-              <DrawerDescription>
-                Esta ação não pode ser desfeita. O aviso será removido permanentemente.
-              </DrawerDescription>
-            </DrawerHeader>
-            <DrawerFooter className="flex flex-col gap-2 pb-8">
-              <Button 
-                variant="destructive" 
-                className="w-full font-bold h-12 rounded-xl"
-                disabled={isDeleting}
-                onClick={async () => {
-                  if (!announcementToDelete) return
-                  setIsDeleting(true)
-                  try {
-                    await announcementService.delete(announcementToDelete)
-                    toast.success("Aviso excluído.")
-                    loadAnnouncements()
-                    setAnnouncementToDelete(null)
-                  } catch (error) {
-                    toast.error("Erro ao excluir.")
-                  } finally {
-                    setIsDeleting(false)
-                  }
-                }}
-              >
-                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apagar"}
-              </Button>
-              <DrawerClose asChild>
-                <Button variant="ghost" className="w-full text-stone-500 font-medium h-12">
-                  Cancelar
-                </Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </div>
-        </DrawerContent>
-      </Drawer>
+          {/* Drawer de Confirmação de Exclusão */}
+          <Drawer open={!!announcementToDelete} onOpenChange={(open) => !open && setAnnouncementToDelete(null)}>
+            <DrawerContent>
+              <div className="mx-auto w-full max-w-sm">
+                <DrawerHeader className="text-center">
+                  <DrawerTitle className="text-stone-800">Excluir Recado?</DrawerTitle>
+                  <DrawerDescription>
+                    Esta ação não pode ser desfeita. O aviso será removido permanentemente.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <DrawerFooter className="flex flex-col gap-2 pb-8">
+                  <Button 
+                    variant="destructive" 
+                    className="w-full font-bold h-12 rounded-xl"
+                    disabled={isDeleting}
+                    onClick={async () => {
+                      if (!announcementToDelete) return
+                      setIsDeleting(true)
+                      try {
+                        await announcementService.delete(announcementToDelete)
+                        toast.success("Aviso excluído.")
+                        loadAnnouncements()
+                        setAnnouncementToDelete(null)
+                      } catch (error) {
+                        toast.error("Erro ao excluir.")
+                      } finally {
+                        setIsDeleting(false)
+                      }
+                    }}
+                  >
+                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apagar"}
+                  </Button>
+                  <DrawerClose asChild>
+                    <Button variant="ghost" className="w-full text-stone-500 font-medium h-12">
+                      Cancelar
+                    </Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </div>
+            </DrawerContent>
+          </Drawer>
 
           {/* Sessão Interativa: Seletor de Mês */}
           <section className="flex flex-col items-center gap-4 py-2">
@@ -286,51 +289,78 @@ export default function Home() {
               ) : schedule.length === 0 ? (
                 <p className="text-center text-xs text-stone-400 py-10">Não há missas cadastradas para este mês.</p>
               ) : (
-                schedule.map((item) => (
-                  <ScheduleCard 
-                    key={item.id} 
-                    id={item.id}
-                    date={format(new Date(item.date + 'T00:00:00'), "dd 'de' MMMM - EEEE", { locale: ptBR })}
-                    time={item.time.substring(0, 5)}
-                    specialTitle={item.special_description}
-                    externalGroup={item.external_group}
-                    slots={item.slots.map((s: any) => ({
-                      id: s.id,
-                      role: s.role,
-                      roleName: (({
-                        'C': 'Comentarista',
-                        '1L': '1ª Leitura',
-                        '2L': '2ª Leitura',
-                        'P': 'Preces',
-                        'L': 'Leitura Única'
-                      } as Record<string, string>)[s.role]) || s.role,
-                      readerName: s.reader_name,
-                      avatarUrl: s.avatar_url,
-                      originalReaderName: s.original_reader?.full_name,
-                      isConfirmed: s.is_confirmed,
-                      isSwapRequested: s.is_swap_requested,
-                      isMine: s.reader_id === user?.id
-                    }))}
-                    onConfirm={async (slotId) => {
-                      try {
-                        await scheduleService.confirmSlot(slotId)
-                        toast.success("Presença confirmada!")
-                        loadSchedule()
-                      } catch (error) {
-                        toast.error("Erro ao confirmar.")
+                (() => {
+                  const grouped = schedule.reduce((acc: any, item: any) => {
+                    const dateKey = item.date;
+                    if (!acc[dateKey]) {
+                      acc[dateKey] = {
+                        date: dateKey,
+                        items: []
                       }
-                    }}
-                    onRequestSwap={async (slotId) => {
-                      try {
-                        await scheduleService.requestSwap(slotId)
-                        toast.success("Troca solicitada!")
-                        loadSchedule()
-                      } catch (error) {
-                        toast.error("Erro ao solicitar troca.")
-                      }
-                    }}
-                  />
-                ))
+                    }
+                    acc[dateKey].items.push(item)
+                    return acc
+                  }, {})
+
+                  const sortedDays = Object.values(grouped).sort((a: any, b: any) => 
+                    new Date(a.date).getTime() - new Date(b.date).getTime()
+                  )
+
+                  return sortedDays.map((day: any) => (
+                    <ScheduleCard 
+                      key={day.date} 
+                      date={format(new Date(day.date + 'T00:00:00'), "dd 'de' MMMM - EEEE", { locale: ptBR })}
+                      items={day.items.map((item: any) => ({
+                        id: item.id,
+                        time: item.time.substring(0, 5),
+                        specialTitle: item.special_description,
+                        slots: item.slots.map((s: any) => ({
+                          id: s.id,
+                          role: s.role,
+                          roleName: (({
+                            'C': 'Comentarista',
+                            '1L': '1ª Leitura',
+                            '2L': '2ª Leitura',
+                            'P': 'Preces',
+                            'L': 'Leitura Única'
+                          } as Record<string, string>)[s.role]) || s.role,
+                          readerName: s.reader_name,
+                          avatarUrl: s.avatar_url,
+                          originalReaderName: s.original_reader?.full_name,
+                          isConfirmed: s.is_confirmed,
+                          isSwapRequested: s.is_swap_requested,
+                          isMine: s.reader_id === user?.id
+                        }))
+                      }))}
+                      isAdmin={headerUser?.role === "admin"}
+                      onEdit={() => {
+                        setScheduleToEdit(day.items) // Passa o array de missas do dia
+                        setIsScheduleSheetOpen(true)
+                      }}
+                      onDelete={() => {
+                        setScheduleToDelete(day.items.map((item: any) => item.id))
+                      }}
+                      onConfirm={async (slotId) => {
+                        try {
+                          await scheduleService.confirmSlot(slotId)
+                          toast.success("Presença confirmada!")
+                          loadSchedule()
+                        } catch (error) {
+                          toast.error("Erro ao confirmar.")
+                        }
+                      }}
+                      onRequestSwap={async (slotId) => {
+                        try {
+                          await scheduleService.requestSwap(slotId)
+                          toast.success("Troca solicitada!")
+                          loadSchedule()
+                        } catch (error) {
+                          toast.error("Erro ao solicitar troca.")
+                        }
+                      }}
+                    />
+                  ))
+                })()
               )}
             </div>
             
@@ -346,24 +376,75 @@ export default function Home() {
                       Adicionar Missa
                     </Button>
                   } />
-                  <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-6">
-                    <SheetHeader className="mb-6">
-                      <SheetTitle className="text-stone-800 uppercase tracking-tighter font-black text-xl">
-                        Escala de {format(currentDate, "MMMM yyyy", { locale: ptBR })}
-                      </SheetTitle>
-                    </SheetHeader>
-                    <ScheduleForm 
-                      currentMonth={currentDate}
-                      onSuccess={() => {
-                        loadSchedule()
-                      }}
-                      onClose={() => setIsScheduleSheetOpen(false)}
-                    />
+                  <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-0 flex flex-col">
+                    <div className="px-6 pt-6 pb-2">
+                      <SheetHeader className="mb-0">
+                        <SheetTitle className="text-stone-800 uppercase tracking-tighter font-black text-xl">
+                          {scheduleToEdit ? "Editar Escala" : `Escala de ${format(currentDate, "MMMM yyyy", { locale: ptBR })}`}
+                        </SheetTitle>
+                      </SheetHeader>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <ScheduleForm 
+                        currentMonth={currentDate}
+                        initialData={scheduleToEdit}
+                        onSuccess={() => {
+                          loadSchedule()
+                        }}
+                        onClose={() => {
+                          setIsScheduleSheetOpen(false)
+                          setScheduleToEdit(null)
+                        }}
+                      />
+                    </div>
                   </SheetContent>
                 </Sheet>
               </div>
             )}
           </section>
+
+          {/* Drawer de Confirmação de Exclusão de Escala */}
+          <Drawer open={!!scheduleToDelete} onOpenChange={(open) => !open && setScheduleToDelete(null)}>
+            <DrawerContent>
+              <div className="mx-auto w-full max-w-sm">
+                <DrawerHeader className="text-center">
+                  <DrawerTitle className="text-stone-800">Excluir Missa da Escala?</DrawerTitle>
+                  <DrawerDescription>
+                    Esta ação removerá a missa e todos os leitores escalados para este dia.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <DrawerFooter className="flex flex-col gap-2 pb-8">
+                  <Button 
+                    variant="destructive" 
+                    className="w-full font-bold h-12 rounded-xl"
+                    disabled={isDeletingSchedule}
+                    onClick={async () => {
+                      if (!scheduleToDelete) return
+                      setIsDeletingSchedule(true)
+                      try {
+                        // Exclui todos os horários vinculados ao card (dia)
+                        await Promise.all(scheduleToDelete.map(id => scheduleService.deleteMass(id)))
+                        toast.success("Dia removido da escala.")
+                        loadSchedule()
+                        setScheduleToDelete(null)
+                      } catch (error) {
+                        toast.error("Erro ao excluir horários do dia.")
+                      } finally {
+                        setIsDeletingSchedule(false)
+                      }
+                    }}
+                  >
+                    {isDeletingSchedule ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apagar"}
+                  </Button>
+                  <DrawerClose asChild>
+                    <Button variant="ghost" className="w-full text-stone-500 font-medium h-12">
+                      Cancelar
+                    </Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </div>
+            </DrawerContent>
+          </Drawer>
 
         </div>
       </main>
