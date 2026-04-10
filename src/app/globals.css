@@ -46,7 +46,25 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 5px rgba(251, 191, 36, 0.2);
+      border-color: rgba(251, 191, 36, 0.4);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.6), 0 0 10px rgba(251, 191, 36, 0.3);
+      border-color: rgba(251, 191, 36, 1);
+      transform: scale(1.01);
+    }
+  }
 }
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 
 :root {
   --background: oklch(0.985 0.01 45); /* #FDF8F5 - Sand */
@@ -95,10 +113,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    font-size: 17px; /* Aumento sutil para melhor legibilidade */
+  }
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+
+  /* Manter o cabeçalho e formulários no tamanho original (16px base) */
+  header, [role="dialog"], .sheet-content {
+    font-size: 16px;
   }
 }

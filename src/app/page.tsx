@@ -12,6 +12,7 @@ import { ptBR } from "date-fns/locale"
 
 import { useAuth } from "@/hooks/useAuth"
 import { AnnouncementForm } from "@/components/AnnouncementForm"
+import { ScheduleForm } from "@/components/ScheduleForm"
 import { announcementService } from "@/services/announcementService"
 import { scheduleService } from "@/services/scheduleService"
 import { toast } from "sonner"
@@ -22,6 +23,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer"
 
 export default function Home() {
   const { user, profile, loading, signInWithGoogle, signOut } = useAuth()
@@ -32,6 +42,10 @@ export default function Home() {
   const [schedule, setSchedule] = useState<any[]>([])
   const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true)
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(true)
+  const [announcementToEdit, setAnnouncementToEdit] = useState<any | null>(null)
+  const [announcementToDelete, setAnnouncementToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isScheduleSheetOpen, setIsScheduleSheetOpen] = useState(false)
   
   // Redirecionamento para Onboarding se não tiver perfil
   useEffect(() => {
@@ -95,14 +109,14 @@ export default function Home() {
           {/* Sessão 1: Mural de Recados */}
           <section className="space-y-4">
             <div className="flex items-center justify-between px-1">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-stone-400">
+              <h2 className="text-xs font-black uppercase tracking-widest text-stone-900">
                 Mural de Recados
               </h2>
               
               {headerUser?.role === "admin" && (
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                  <SheetTrigger render={<Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-bold text-stone-500 hover:text-stone-800 hover:bg-stone-100" />}>
-                    <Plus className="mr-1 h-3 w-3" />
+                  <SheetTrigger render={<Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-bold text-stone-500 hover:text-stone-800 hover:bg-stone-100" />}>
+                    <Plus className="mr-1 h-3.5 w-3.5" />
                     Adicionar Recado
                   </SheetTrigger>
                   <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-6">
@@ -110,18 +124,34 @@ export default function Home() {
                       <SheetTitle className="text-stone-800">Novo Aviso</SheetTitle>
                     </SheetHeader>
                     <AnnouncementForm 
+                      initialData={announcementToEdit}
                       onSave={async (data) => {
                         try {
-                          await announcementService.create({ ...data, type: 'Aviso' })
-                          toast.success("Aviso publicado com sucesso!")
+                          if (data.id) {
+                            // Atualização
+                            await announcementService.update(data.id, {
+                              title: data.title,
+                              content: data.content,
+                              expires_at: data.expires_at?.toISOString()
+                            })
+                            toast.success("Aviso atualizado!")
+                          } else {
+                            // Criação
+                            await announcementService.create({ ...data, type: 'Aviso' })
+                            toast.success("Aviso publicado com sucesso!")
+                          }
                           loadAnnouncements()
                           setIsSheetOpen(false)
+                          setAnnouncementToEdit(null)
                         } catch (error) {
-                          toast.error("Erro ao publicar aviso. Tente novamente.")
+                          toast.error("Erro ao salvar aviso. Tente novamente.")
                           throw error
                         }
                       }}
-                      onClose={() => setIsSheetOpen(false)}
+                      onClose={() => {
+                        setIsSheetOpen(false)
+                        setAnnouncementToEdit(null)
+                      }}
                     />
                   </SheetContent>
                 </Sheet>
@@ -141,6 +171,7 @@ export default function Home() {
                     key={ann.id} 
                     {...ann} 
                     isAdmin={headerUser?.role === "admin"}
+                    isLoggedIn={!!user}
                     onRead={async (id) => {
                       if (!user) {
                         toast.error("Faça login para marcar como lido.")
@@ -157,20 +188,67 @@ export default function Home() {
                       try {
                         await announcementService.update(id, data)
                         toast.success("Aviso atualizado!")
-                        loadAnnouncements()
-                      } catch (error) {
-                        toast.error("Erro ao atualizar aviso.")
-                      }
-                    }}
-                  />
-                ))
-              )}
-            </div>
-          </section>
+                    loadAnnouncements()
+                  } catch (error) {
+                    toast.error("Erro ao atualizar aviso.")
+                  }
+                }}
+                onDelete={(id) => setAnnouncementToDelete(id)}
+                onEdit={(ann) => {
+                  setAnnouncementToEdit(ann)
+                  setIsSheetOpen(true)
+                }}
+              />
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* Drawer de Confirmação de Exclusão */}
+      <Drawer open={!!announcementToDelete} onOpenChange={(open) => !open && setAnnouncementToDelete(null)}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm">
+            <DrawerHeader className="text-center">
+              <DrawerTitle className="text-stone-800">Excluir Recado?</DrawerTitle>
+              <DrawerDescription>
+                Esta ação não pode ser desfeita. O aviso será removido permanentemente.
+              </DrawerDescription>
+            </DrawerHeader>
+            <DrawerFooter className="flex flex-col gap-2 pb-8">
+              <Button 
+                variant="destructive" 
+                className="w-full font-bold h-12 rounded-xl"
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!announcementToDelete) return
+                  setIsDeleting(true)
+                  try {
+                    await announcementService.delete(announcementToDelete)
+                    toast.success("Aviso excluído.")
+                    loadAnnouncements()
+                    setAnnouncementToDelete(null)
+                  } catch (error) {
+                    toast.error("Erro ao excluir.")
+                  } finally {
+                    setIsDeleting(false)
+                  }
+                }}
+              >
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apagar"}
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="ghost" className="w-full text-stone-500 font-medium h-12">
+                  Cancelar
+                </Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </div>
+        </DrawerContent>
+      </Drawer>
 
           {/* Sessão Interativa: Seletor de Mês */}
           <section className="flex flex-col items-center gap-4 py-2">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-stone-400">
+            <h2 className="text-xs font-black uppercase tracking-widest text-stone-900">
               Escala de Leitores
             </h2>
             <div className="flex items-center justify-between w-full bg-white rounded-full border border-stone-200 px-2 py-1.5 shadow-sm">
@@ -226,7 +304,8 @@ export default function Home() {
                         'P': 'Preces',
                         'L': 'Leitura Única'
                       } as Record<string, string>)[s.role]) || s.role,
-                      readerName: s.reader?.full_name,
+                      readerName: s.reader_name,
+                      avatarUrl: s.avatar_url,
                       originalReaderName: s.original_reader?.full_name,
                       isConfirmed: s.is_confirmed,
                       isSwapRequested: s.is_swap_requested,
@@ -254,6 +333,36 @@ export default function Home() {
                 ))
               )}
             </div>
+            
+            {headerUser?.role === "admin" && (
+              <div className="pt-2">
+                <Sheet open={isScheduleSheetOpen} onOpenChange={setIsScheduleSheetOpen}>
+                  <SheetTrigger render={
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-14 border-dashed border-stone-300 text-stone-500 hover:text-amber-700 hover:border-amber-300 hover:bg-amber-50 rounded-2xl group transition-all"
+                    >
+                      <Plus className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                      Adicionar Missa
+                    </Button>
+                  } />
+                  <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-6">
+                    <SheetHeader className="mb-6">
+                      <SheetTitle className="text-stone-800 uppercase tracking-tighter font-black text-xl">
+                        Escala de {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+                      </SheetTitle>
+                    </SheetHeader>
+                    <ScheduleForm 
+                      currentMonth={currentDate}
+                      onSuccess={() => {
+                        loadSchedule()
+                      }}
+                      onClose={() => setIsScheduleSheetOpen(false)}
+                    />
+                  </SheetContent>
+                </Sheet>
+              </div>
+            )}
           </section>
 
         </div>

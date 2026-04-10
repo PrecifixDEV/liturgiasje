@@ -76,7 +76,12 @@ export const announcementService = {
       .from('announcements')
       .select(`
         *,
-        views:announcement_views(user_id)
+        author:users!created_by(full_name),
+        views:announcement_views(
+          user_id,
+          viewed_at,
+          user:users(full_name)
+        )
       `)
       .order('created_at', { ascending: false })
 
@@ -87,8 +92,22 @@ export const announcementService = {
       .filter(ann => !ann.expires_at || new Date(ann.expires_at) > now)
       .map(ann => ({
         ...ann,
-        isRead: ann.views?.some((v: any) => v.user_id === userId) || false
+        authorName: ann.author?.full_name,
+        isRead: ann.created_by === userId || ann.views?.some((v: any) => v.user_id === userId) || false,
+        viewers: ann.views?.map((v: any) => ({
+          name: v.user?.full_name || 'Usuário',
+          at: v.viewed_at
+        })) || []
       }))
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('announcements')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
   },
 
   async markAsRead(announcementId: string, userId: string) {

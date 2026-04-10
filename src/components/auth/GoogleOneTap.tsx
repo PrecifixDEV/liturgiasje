@@ -10,10 +10,13 @@ export function GoogleOneTap() {
   useEffect(() => {
     if (loading || user) return
 
-    const initializeOneTap = async () => {
-      if (!window.google) return
+    let isInitialized = false
 
-      // Gerar nonce para segurança (necessário para o Supabase validar o ID Token)
+    const initializeOneTap = async () => {
+      if (!window.google || isInitialized) return
+      isInitialized = true
+
+      // Gerar nonce para segurança
       const rawNonce = Math.random().toString(36).substring(2, 15)
       const encoder = new TextEncoder()
       const data = encoder.encode(rawNonce)
@@ -23,13 +26,13 @@ export function GoogleOneTap() {
 
       window.google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-        nonce: hashedNonce, // Passa o hash para o Google
+        nonce: hashedNonce,
         callback: async (response: any) => {
           try {
-            const { data, error } = await supabase.auth.signInWithIdToken({
+            const { error } = await supabase.auth.signInWithIdToken({
               provider: 'google',
               token: response.credential,
-              nonce: rawNonce, // Passa o valor original para o Supabase validar
+              nonce: rawNonce,
             })
             if (error) throw error
             console.log("Login One Tap realizado com sucesso")
@@ -38,12 +41,16 @@ export function GoogleOneTap() {
           }
         },
         auto_select: false,
-        use_fedcm_for_prompt: true,
+        use_fedcm_for_prompt: false, // Desativado para maior estabilidade no localhost
         itp_support: true,
         cancel_on_tap_outside: true,
       })
 
-      window.google.accounts.id.prompt()
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed()) {
+          console.log("One Tap não exibido:", notification.getNotDisplayedReason())
+        }
+      })
     }
 
     const interval = setInterval(() => {
@@ -51,7 +58,7 @@ export function GoogleOneTap() {
         initializeOneTap()
         clearInterval(interval)
       }
-    }, 500)
+    }, 1000)
 
     return () => clearInterval(interval)
   }, [user, loading])

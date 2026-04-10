@@ -8,8 +8,8 @@ import { CalendarDays, Clock, RefreshCw, CheckCircle, UserPlus } from "lucide-re
 interface ReaderSlot {
   id: string
   role: "C" | "1L" | "2L" | "P" | "L"
-  roleName: string
   readerName?: string
+  avatarUrl?: string
   originalReaderName?: string
   isConfirmed: boolean
   isSwapRequested: boolean
@@ -87,40 +87,48 @@ export function ScheduleCard({
         {slots.map((slot) => (
           <div key={slot.id} className="flex flex-col px-4 py-3 space-y-1">
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                {/* Role Icon - Substituído por RefreshCw se houver troca */}
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-bold border transition-all ${
-                  slot.isSwapRequested 
-                    ? "bg-amber-100 text-amber-700 border-amber-200 animate-pulse ring-2 ring-amber-100 ring-offset-1" 
-                    : "bg-stone-100 text-stone-600 border-stone-200"
-                }`}>
-                  {slot.isSwapRequested ? (
-                    <RefreshCw className="h-4 w-4" />
-                  ) : (
-                    slot.role
-                  )}
-                </div>
-                
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-medium text-stone-400 capitalize -mb-0.5">{slot.roleName}</span>
-                  <span className="text-sm font-semibold text-stone-800 leading-tight">
-                    {slot.readerName || "---"}
+                <div className="flex items-center gap-3">
+                  {/* Avatar ou Role Icon */}
+                  <div className="relative">
+                    {slot.avatarUrl ? (
+                      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm">
+                        <img src={slot.avatarUrl} alt={slot.readerName} className="h-full w-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black border transition-all ${
+                        slot.isSwapRequested 
+                          ? "bg-amber-100 text-amber-700 border-amber-200 animate-pulse ring-2 ring-amber-100 ring-offset-1" 
+                          : "bg-stone-50 text-stone-600 border-stone-200"
+                      }`}>
+                        {slot.isSwapRequested ? (
+                          <RefreshCw className="h-4 w-4" />
+                        ) : (
+                          slot.role
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[13px] font-bold text-stone-800 leading-tight truncate">
+                      {slot.readerName || "---"}
+                    </span>
                     {slot.originalReaderName && slot.readerName !== slot.originalReaderName && (
-                      <span className="inline-block ml-1.5 text-[10px] font-normal text-stone-500">
-                        (substituiu {slot.originalReaderName})
+                      <span className="text-[9px] font-medium text-stone-400 italic">
+                        substituiu {slot.originalReaderName}
                       </span>
                     )}
-                  </span>
+                  </div>
                 </div>
-              </div>
 
               {/* Ações e Status */}
-              <div className="flex items-center gap-2">
-                {slot.isConfirmed && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-50 text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                  </div>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {slot.isConfirmed && (
+                    <div className="flex items-center gap-1 text-[10px] font-black text-green-600 uppercase tracking-tighter">
+                      <CheckCircle className="h-4 w-4 fill-green-50" />
+                      Confirmado
+                    </div>
+                  )}
                 
                 {/* Botão de Troca (Apenas para o dono da escala) */}
                 {slot.isMine && !slot.isSwapRequested && (

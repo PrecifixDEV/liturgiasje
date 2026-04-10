@@ -40,6 +40,7 @@ export const userService = {
   },
 
   async updateProfile(userId: string, profile: Partial<UserProfile>) {
+    // 1. Atualizar o perfil do usuário
     const { data, error } = await supabase
       .from('users')
       .update(profile)
@@ -48,6 +49,15 @@ export const userService = {
       .single()
 
     if (error) throw error
+
+    // 2. Se o nome foi alterado, sincronizar com a tabela de membros
+    if (profile.full_name) {
+      await supabase
+        .from('members')
+        .update({ full_name: profile.full_name })
+        .eq('claimed_by', userId)
+    }
+
     return data
   },
 

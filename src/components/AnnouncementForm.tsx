@@ -14,7 +14,14 @@ import { CalendarIcon, Loader2, Image as ImageIcon, Music, X } from "lucide-reac
 import { cn } from "@/lib/utils"
 
 interface AnnouncementFormProps {
+  initialData?: {
+    id: string;
+    title: string;
+    content: string;
+    expires_at?: string;
+  }
   onSave: (data: { 
+    id?: string;
     title: string; 
     content: string; 
     expires_at: Date | null;
@@ -24,11 +31,13 @@ interface AnnouncementFormProps {
   onClose: () => void
 }
 
-export function AnnouncementForm({ onSave, onClose }: AnnouncementFormProps) {
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [hasExpiration, setHasExpiration] = useState(false)
-  const [expirationDate, setExpirationDate] = useState<Date | undefined>(undefined)
+export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementFormProps) {
+  const [title, setTitle] = useState(initialData?.title || "")
+  const [content, setContent] = useState(initialData?.content || "")
+  const [hasExpiration, setHasExpiration] = useState(!!initialData?.expires_at)
+  const [expirationDate, setExpirationDate] = useState<Date | undefined>(
+    initialData?.expires_at ? new Date(initialData.expires_at) : undefined
+  )
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,6 +49,7 @@ export function AnnouncementForm({ onSave, onClose }: AnnouncementFormProps) {
     setIsSubmitting(true)
     try {
       await onSave({
+        id: initialData?.id,
         title,
         content,
         expires_at: hasExpiration ? (expirationDate || null) : null,
@@ -226,7 +236,7 @@ export function AnnouncementForm({ onSave, onClose }: AnnouncementFormProps) {
               Salvando...
             </>
           ) : (
-            "Publicar Aviso"
+            initialData ? "Salvar Alterações" : "Publicar Aviso"
           )}
         </Button>
       </div>
