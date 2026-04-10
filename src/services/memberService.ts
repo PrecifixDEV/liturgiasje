@@ -9,6 +9,8 @@ export interface Member {
   created_at: string
   claimed_user?: {
     avatar_url: string | null
+    role?: 'admin' | 'reader'
+    preferences?: any
   }
 }
 
@@ -16,7 +18,7 @@ export const memberService = {
   async listAll(): Promise<Member[]> {
     const { data, error } = await supabase
       .from('members')
-      .select('*, claimed_user:users!claimed_by(full_name, avatar_url)')
+      .select('*, claimed_user:users!claimed_by(full_name, avatar_url, role, preferences)')
       .order('full_name')
     
     if (error) throw error
@@ -93,7 +95,7 @@ export const memberService = {
   async getByUserId(userId: string): Promise<Member | null> {
     const { data, error } = await supabase
       .from('members')
-      .select('*, claimed_user:users!claimed_by(full_name, avatar_url)')
+      .select('*, claimed_user:users!claimed_by(full_name, avatar_url, role, preferences)')
       .eq('claimed_by', userId)
       .maybeSingle()
     

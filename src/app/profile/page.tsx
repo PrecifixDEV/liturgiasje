@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { Header } from "@/components/Header"
 import { maskPhone, cn } from "@/lib/utils"
 import { ProfileImageEditor } from "@/components/profile/ProfileImageEditor"
+import { Badge } from "@/components/ui/badge"
 
 const COMMON_TIMES = ["07:00", "09:00", "11:00", "19:00"]
 
@@ -115,6 +116,13 @@ export default function ProfilePage() {
               
               <div className="flex flex-col items-center py-4">
                 <ProfileImageEditor />
+                {profile?.role === "admin" && (
+                  <div className="mt-4">
+                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 font-black text-[10px] tracking-wider px-4 py-1.5 rounded-full uppercase shadow-sm">
+                      Administrador
+                    </Badge>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">

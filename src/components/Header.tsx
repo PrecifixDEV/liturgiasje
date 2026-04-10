@@ -70,10 +70,6 @@ export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
                 
                 {user?.role === "admin" && (
                   <>
-                    <DropdownMenuItem>
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span>Painel de Escalas</span>
-                    </DropdownMenuItem>
                     <DropdownMenuItem
                       render={
                         <Link href="/admin/members" className="flex items-center w-full">

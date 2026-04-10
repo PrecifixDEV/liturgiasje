@@ -22,6 +22,7 @@ interface AnnouncementProps {
   image_url?: string
   audio_url?: string
   expires_at?: string
+  createdAt?: string
   isRead?: boolean
   isAdmin?: boolean
   isLoggedIn?: boolean
@@ -45,6 +46,7 @@ export function AnnouncementCard({
   image_url,
   audio_url,
   expires_at,
+  createdAt,
   isRead,
   isAdmin,
   isLoggedIn,
@@ -245,7 +247,7 @@ export function AnnouncementCard({
               {/* Autor do Recado */}
               <div className="flex items-center justify-end px-1 pt-1">
                 <span className="text-[10px] font-medium text-stone-400 italic">
-                  Publicado por: {authorName || 'Administração'}
+                  Publicado por: {authorName || 'Administração'} {createdAt && ` em ${format(new Date(createdAt), "dd/MM 'às' HH:mm", { locale: ptBR })}`}
                 </span>
               </div>
 

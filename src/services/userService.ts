@@ -87,5 +87,17 @@ export const userService = {
     await this.updateProfile(userId, { avatar_url: publicUrl })
 
     return publicUrl
+  },
+
+  async updateRole(userId: string, role: 'admin' | 'reader') {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', userId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
   }
 }

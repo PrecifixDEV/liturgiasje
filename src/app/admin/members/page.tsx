@@ -6,9 +6,20 @@ import { useAuth } from "@/hooks/useAuth"
 import { memberService, Member } from "@/services/memberService"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Search, UserCircle } from "lucide-react"
+import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Search, UserCircle, UserKey } from "lucide-react"
 import { toast } from "sonner"
 import { Header } from "@/components/Header"
+import { userService } from "@/services/userService"
+import { Badge } from "@/components/ui/badge"
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer"
 import {
   Sheet,
   SheetContent,
@@ -26,6 +37,9 @@ export default function AdminMembersPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<Member | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [roleChangeMember, setRoleChangeMember] = useState<Member | null>(null)
+  const [isRoleDrawerOpen, setIsRoleDrawerOpen] = useState(false)
+  const [isSubmittingRole, setIsSubmittingRole] = useState(false)
 
   // Verificar se é admin
   useEffect(() => {
@@ -138,7 +152,12 @@ export default function AdminMembersPage() {
                       <div className="space-y-0.5 truncate">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-bold text-stone-800 truncate">{member.full_name}</p>
-                          {member.is_claimed && (
+                          {member.claimed_user?.role === 'admin' && (
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 font-bold text-[8px] tracking-wider px-1.5 py-0 rounded shrink-0 uppercase">
+                              Admin
+                            </Badge>
+                          )}
+                          {member.is_claimed && !member.claimed_user?.role && (
                             <span className="text-[8px] font-bold uppercase tracking-wider bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 shrink-0">
                               No App
                             </span>
@@ -149,6 +168,20 @@ export default function AdminMembersPage() {
                     </div>
                     
                     <div className="flex items-center gap-1 shrink-0">
+                      {member.is_claimed && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => {
+                            setRoleChangeMember(member)
+                            setIsRoleDrawerOpen(true)
+                          }} 
+                          className={`h-8 w-8 ${member.claimed_user?.role === 'admin' ? 'text-amber-600 hover:text-amber-700' : 'text-stone-400 hover:text-stone-800'}`}
+                          title={member.claimed_user?.role === 'admin' ? "Remover Administrador" : "Tornar Administrador"}
+                        >
+                          <UserKey className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" onClick={() => {
                         setEditingMember(member)
                         setIsSheetOpen(true)
@@ -195,6 +228,53 @@ export default function AdminMembersPage() {
           />
         </SheetContent>
       </Sheet>
+
+      {/* Drawer de Confirmação de Role */}
+      <Drawer open={isRoleDrawerOpen} onOpenChange={setIsRoleDrawerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm">
+            <DrawerHeader className="text-center">
+              <DrawerTitle className="text-stone-800">
+                {roleChangeMember?.claimed_user?.role === 'admin' ? "Remover Administrador?" : "Tornar Administrador?"}
+              </DrawerTitle>
+              <DrawerDescription>
+                {roleChangeMember?.claimed_user?.role === 'admin' 
+                  ? `O membro ${roleChangeMember?.full_name} deixará de ter permissões de administrador no sistema.`
+                  : `O membro ${roleChangeMember?.full_name} terá permissão total para gerenciar escalas e outros membros.`}
+              </DrawerDescription>
+            </DrawerHeader>
+            <DrawerFooter className="flex flex-col gap-2 pb-8">
+              <Button 
+                variant={roleChangeMember?.claimed_user?.role === 'admin' ? "destructive" : "default"}
+                className={`w-full font-bold h-12 rounded-xl ${roleChangeMember?.claimed_user?.role !== 'admin' ? 'bg-stone-800 hover:bg-black text-white' : ''}`}
+                disabled={isSubmittingRole}
+                onClick={async () => {
+                  if (!roleChangeMember?.claimed_by) return
+                  setIsSubmittingRole(true)
+                  try {
+                    const newRole = roleChangeMember.claimed_user?.role === 'admin' ? 'reader' : 'admin'
+                    await userService.updateRole(roleChangeMember.claimed_by, newRole)
+                    toast.success(newRole === 'admin' ? "Novo administrador definido!" : "Permissões de administrador removidas.")
+                    loadMembers()
+                    setIsRoleDrawerOpen(false)
+                  } catch (error) {
+                    toast.error("Erro ao atualizar permissões.")
+                  } finally {
+                    setIsSubmittingRole(false)
+                  }
+                }}
+              >
+                {isSubmittingRole ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Alteração"}
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="ghost" className="w-full text-stone-500 font-medium h-12" disabled={isSubmittingRole}>
+                  Cancelar
+                </Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }

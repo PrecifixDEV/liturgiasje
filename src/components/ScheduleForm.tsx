@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/popover"
 import { memberService, Member } from "@/services/memberService"
 import { scheduleService } from "@/services/scheduleService"
-import { Plus, Search, Trash2, Calendar, Clock, Type, CheckCircle2, User } from "lucide-react"
+import { unavailableService } from "@/services/unavailableService"
+import { Plus, Search, Trash2, Calendar, Clock, Type, CheckCircle2, User, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { toast } from "sonner"
@@ -62,6 +63,7 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
   const [usageCounts, setUsageCounts] = useState<Record<string, number>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [unavailableUserIds, setUnavailableUserIds] = useState<string[]>([])
 
   const monthRef = format(currentMonth, "yyyy-MM")
 
@@ -75,6 +77,21 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
   useEffect(() => {
     loadInitialData()
   }, [])
+
+  useEffect(() => {
+    if (date) {
+      loadUnavailableForDate(date)
+    }
+  }, [date])
+
+  const loadUnavailableForDate = async (d: string) => {
+    try {
+      const ids = await unavailableService.listManyByDate(d)
+      setUnavailableUserIds(ids)
+    } catch (error) {
+      console.error("Erro ao carregar indisponibilidades:", error)
+    }
+  }
 
   useEffect(() => {
     if (initialData && Array.isArray(initialData)) {
@@ -135,6 +152,24 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
       const index = sameTypeSlots.findIndex(prev => prev.id === s.id) + 1
       return { ...s, roleLabel: `${index}${s.roleType}` }
     })
+  }
+
+  const checkPreference = (member: Member, massTime: string, massDate: string) => {
+    if (!member.claimed_user?.preferences?.day_preferences) return false
+    
+    // Obter dia da semana (0-6, 0 é domingo)
+    try {
+      const dateObj = new Date(massDate + 'T00:00:00')
+      const dayOfWeek = dateObj.getDay()
+      
+      // O app usa "6" para Domingo nas preferências do perfil
+      const dayKey = dayOfWeek === 0 ? "6" : dayOfWeek.toString()
+      
+      const prefs = member.claimed_user.preferences.day_preferences[dayKey]
+      return Array.isArray(prefs) && (prefs.includes(massTime) || prefs.includes(massTime.substring(0, 5)))
+    } catch {
+      return false
+    }
   }
 
   const addSession = () => {
@@ -326,7 +361,7 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
                   <div className="relative">
                     <Type className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
                     <Input 
-                      placeholder="Ex: Ramos" 
+                      placeholder="" 
                       value={sess.description}
                       onChange={(e) => updateSessionField(sess.tempId, 'description', e.target.value)}
                       className="pl-10 h-10 rounded-xl bg-stone-50/50"
@@ -368,28 +403,64 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
                               placeholder="Pesquisar leitor..." 
                               value={searchTerm}
                               onValueChange={setSearchTerm}
+                              autoFocus
                             />
                             <CommandList>
                               <CommandEmpty>Nenhum leitor encontrado.</CommandEmpty>
                               <CommandGroup>
-                                {members.map((member) => (
-                                  <CommandItem
-                                    key={member.id}
-                                    value={member.full_name}
-                                    onSelect={() => {
-                                      updateSlotMember(sess.tempId, slot.id, member)
-                                      setSearchTerm("")
-                                    }}
-                                    className="flex items-center justify-between"
-                                  >
-                                    <span className="font-medium">{member.full_name}</span>
-                                    {usageCounts[member.id] > 0 && (
-                                      <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-md">
-                                        {usageCounts[member.id]}x
-                                      </span>
-                                    )}
-                                  </CommandItem>
-                                ))}
+                                {(() => {
+                                  const sortedMembers = [...members].sort((a, b) => {
+                                    const prefA = checkPreference(a, sess.time, date) ? 1 : 0
+                                    const prefB = checkPreference(b, sess.time, date) ? 1 : 0
+                                    if (prefA !== prefB) return prefB - prefA
+
+                                    const unA = a.claimed_by && unavailableUserIds.includes(a.claimed_by) ? 1 : 0
+                                    const unB = b.claimed_by && unavailableUserIds.includes(b.claimed_by) ? 1 : 0
+                                    if (unA !== unB) return unA - unB
+
+                                    return a.full_name.localeCompare(b.full_name)
+                                  })
+
+                                  return sortedMembers.map((member) => {
+                                    const isUnavailable = member.claimed_by ? unavailableUserIds.includes(member.claimed_by) : false
+                                    const isPreference = checkPreference(member, sess.time, date)
+                                    
+                                    return (
+                                      <CommandItem
+                                        key={member.id}
+                                        value={member.full_name}
+                                        onSelect={() => {
+                                          if (isUnavailable) {
+                                            toast.warning(`${member.full_name} informou que não poderá participar nesta data.`, {
+                                              duration: 5000,
+                                              icon: <AlertCircle className="h-4 w-4 text-amber-600" />
+                                            })
+                                          }
+                                          updateSlotMember(sess.tempId, slot.id, member)
+                                          setSearchTerm("")
+                                        }}
+                                        className="flex items-center justify-between"
+                                      >
+                                        <span className={cn(
+                                          "font-medium transition-colors",
+                                          isUnavailable && "text-red-500 font-bold",
+                                          isPreference && !isUnavailable && "text-green-600 font-bold"
+                                        )}>
+                                          {member.full_name}
+                                          {isUnavailable && " (Indisponível)"}
+                                          {isPreference && !isUnavailable && " (Preferência)"}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                          {usageCounts[member.id] > 0 && (
+                                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-md">
+                                              {usageCounts[member.id]}x
+                                            </span>
+                                          )}
+                                        </div>
+                                      </CommandItem>
+                                    )
+                                  })
+                                })()}
                               </CommandGroup>
                             </CommandList>
                           </Command>

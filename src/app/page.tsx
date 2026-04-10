@@ -6,13 +6,14 @@ import { Header } from "@/components/Header"
 import { AnnouncementCard } from "@/components/AnnouncementCard"
 import { ScheduleCard } from "@/components/ScheduleCard"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, CalendarOff } from "lucide-react"
 import { addMonths, format, subMonths } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 import { useAuth } from "@/hooks/useAuth"
 import { AnnouncementForm } from "@/components/AnnouncementForm"
 import { ScheduleForm } from "@/components/ScheduleForm"
+import { UnavailableForm } from "@/components/UnavailableForm"
 import { announcementService } from "@/services/announcementService"
 import { scheduleService } from "@/services/scheduleService"
 import { toast } from "sonner"
@@ -32,6 +33,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function Home() {
   const { user, profile, member, loading, signInWithGoogle, signOut } = useAuth()
@@ -55,6 +57,7 @@ export default function Home() {
   const [takeSwapTarget, setTakeSwapTarget] = useState<any | null>(null)
   const [isRequestingSwap, setIsRequestingSwap] = useState(false)
   const [isAcceptingSwap, setIsAcceptingSwap] = useState(false)
+  const [isUnavailableDrawerOpen, setIsUnavailableDrawerOpen] = useState(false)
   
   // Redirecionamento para Onboarding se não tiver perfil
   useEffect(() => {
@@ -147,6 +150,9 @@ export default function Home() {
                     'L': 'L'
                   } as Record<string, string>)[swap.role]) || swap.role;
 
+                  const requesterName = swap.reader?.full_name || swap.member?.full_name || "---";
+                  const requesterAvatar = swap.reader?.avatar_url;
+
                   return (
                     <button
                       key={swap.id}
@@ -173,18 +179,27 @@ export default function Home() {
                           setTimeout(() => el?.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2'), 2000);
                         }
                       }}
-                      className="flex-none w-[200px] bg-white border border-amber-100 rounded-2xl p-3 shadow-sm hover:shadow-md transition-all active:scale-95 snap-start text-left"
+                      className="flex-none w-[220px] bg-white border border-amber-100 rounded-2xl p-3 shadow-sm hover:shadow-md transition-all active:scale-95 snap-start text-left"
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="bg-amber-100 p-1.5 rounded-lg text-amber-700">
-                          <RefreshCw className="h-3.5 w-3.5" />
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="bg-amber-100 p-1.5 rounded-lg text-amber-700 shrink-0">
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="text-[10px] font-black text-amber-700 uppercase truncate" title={requesterName}>
+                            {requesterName}
+                          </span>
                         </div>
-                        <span className="text-[10px] font-black text-amber-700 uppercase">{roleName}</span>
+                        <Avatar className="h-6 w-6 shrink-0 border border-amber-50 shadow-sm">
+                          <AvatarImage src={requesterAvatar} />
+                          <AvatarFallback className="text-[8px] font-black bg-stone-100 text-stone-400">
+                            {requesterName.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                       </div>
-                      <p className="text-[11px] font-bold text-stone-800">
-                        Solicitação para {format(massDate, "dd/MM")} às {swap.mass.time.substring(0, 5)}
+                      <p className="text-[11px] font-bold text-stone-800 leading-snug">
+                        Solicitação para {format(massDate, "dd/MM (EEEE)", { locale: ptBR })} às {swap.mass.time.substring(0, 5)} - {roleName}
                       </p>
-                      <span className="text-[9px] text-stone-400 uppercase font-bold tracking-tight">Ver na escala</span>
                     </button>
                   );
                 })}
@@ -194,54 +209,10 @@ export default function Home() {
 
           {/* Sessão 1: Mural de Recados */}
           <section className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-xs font-black uppercase tracking-widest text-stone-900">
+            <div className="flex items-center justify-center px-1">
+              <h2 className="text-xs font-black uppercase tracking-widest text-stone-900 text-center">
                 Mural de Recados
               </h2>
-              
-              {headerUser?.role === "admin" && (
-                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                  <SheetTrigger render={<Button variant="ghost" size="sm" className="h-8 px-2 text-xs font-bold text-stone-500 hover:text-stone-800 hover:bg-stone-100" />}>
-                    <Plus className="mr-1 h-3.5 w-3.5" />
-                    Adicionar Recado
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-6 overflow-y-auto">
-                    <SheetHeader>
-                      <SheetTitle className="text-stone-800">Novo Aviso</SheetTitle>
-                    </SheetHeader>
-                    <AnnouncementForm 
-                      initialData={announcementToEdit}
-                      onSave={async (data) => {
-                        try {
-                          if (data.id) {
-                            // Atualização
-                            await announcementService.update(data.id, {
-                              title: data.title,
-                              content: data.content,
-                              expires_at: data.expires_at?.toISOString()
-                            })
-                            toast.success("Aviso atualizado!")
-                          } else {
-                            // Criação
-                            await announcementService.create({ ...data, type: 'Aviso' })
-                            toast.success("Aviso publicado com sucesso!")
-                          }
-                          loadAnnouncements()
-                          setIsSheetOpen(false)
-                          setAnnouncementToEdit(null)
-                        } catch (error) {
-                          toast.error("Erro ao salvar aviso. Tente novamente.")
-                          throw error
-                        }
-                      }}
-                      onClose={() => {
-                        setIsSheetOpen(false)
-                        setAnnouncementToEdit(null)
-                      }}
-                    />
-                  </SheetContent>
-                </Sheet>
-              )}
             </div>
             
             <div className="space-y-2">
@@ -256,6 +227,7 @@ export default function Home() {
                   <AnnouncementCard 
                     key={ann.id} 
                     {...ann} 
+                    createdAt={ann.created_at}
                     authorId={ann.created_by}
                     currentUserId={user?.id}
                     isAdmin={headerUser?.role === "admin"}
@@ -314,6 +286,57 @@ export default function Home() {
                 ))
               )}
             </div>
+
+            {headerUser?.role === "admin" && (
+              <div className="pt-2">
+                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                  <SheetTrigger render={
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-14 border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 rounded-2xl group transition-all"
+                    >
+                      <Plus className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                      Adicionar Recado
+                    </Button>
+                  } />
+                  <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-6 overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle className="text-stone-800 uppercase tracking-tighter font-black text-xl mb-4">Novo Aviso</SheetTitle>
+                    </SheetHeader>
+                    <AnnouncementForm 
+                      initialData={announcementToEdit}
+                      onSave={async (data) => {
+                        try {
+                          if (data.id) {
+                            // Atualização
+                            await announcementService.update(data.id, {
+                              title: data.title,
+                              content: data.content,
+                              expires_at: data.expires_at?.toISOString()
+                            })
+                            toast.success("Aviso atualizado!")
+                          } else {
+                            // Criação
+                            await announcementService.create({ ...data, type: 'Aviso' })
+                            toast.success("Aviso publicado com sucesso!")
+                          }
+                          loadAnnouncements()
+                          setIsSheetOpen(false)
+                          setAnnouncementToEdit(null)
+                        } catch (error) {
+                          toast.error("Erro ao salvar aviso. Tente novamente.")
+                          throw error
+                        }
+                      }}
+                      onClose={() => {
+                        setIsSheetOpen(false)
+                        setAnnouncementToEdit(null)
+                      }}
+                    />
+                  </SheetContent>
+                </Sheet>
+              </div>
+            )}
           </section>
 
           {/* Drawer de Confirmação de Exclusão */}
@@ -360,9 +383,24 @@ export default function Home() {
 
           {/* Sessão Interativa: Seletor de Mês */}
           <section className="flex flex-col items-center gap-4 py-2">
-            <h2 className="text-xs font-black uppercase tracking-widest text-stone-900">
-              Escala de Leitores
-            </h2>
+            <div className="flex items-center justify-center w-full relative h-8">
+              <h2 className="text-xs font-black uppercase tracking-widest text-stone-900">
+                Escala de Leitores
+              </h2>
+              {user && (
+                <div className="absolute right-0">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-full text-red-500 hover:text-red-600 hover:bg-red-50"
+                    onClick={() => setIsUnavailableDrawerOpen(true)}
+                    title="Meus Dias Indisponíveis"
+                  >
+                    <CalendarOff className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
             <div className="flex items-center justify-between w-full bg-white rounded-full border border-stone-200 px-2 py-1.5 shadow-sm">
               <Button 
                 variant="ghost" 
@@ -658,20 +696,22 @@ export default function Home() {
               <div className="mx-auto w-full max-w-sm">
                 <DrawerHeader className="text-center">
                   <DrawerTitle className="text-stone-800">Assumir esta Escala?</DrawerTitle>
-                  <DrawerDescription className="text-stone-600">
-                    Ao confirmar, você assumirá o compromisso de realizar a leitura abaixo:
-                    <div className="mt-4 p-4 bg-stone-50 rounded-2xl border border-stone-100 flex flex-col gap-1 text-left">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] uppercase font-black text-stone-400">Data</span>
-                        <span className="text-sm font-bold text-stone-800">{takeSwapTarget?.date}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] uppercase font-black text-stone-400">Horário</span>
-                        <span className="text-sm font-bold text-stone-800">{takeSwapTarget?.time}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-1 pt-1 border-t border-stone-100">
-                        <span className="text-[10px] uppercase font-black text-stone-400">Função</span>
-                        <span className="text-sm font-black text-green-700">{takeSwapTarget?.roleName}</span>
+                  <DrawerDescription className="text-stone-600 font-normal" asChild>
+                    <div>
+                      Ao confirmar, você assumirá o compromisso de realizar a leitura abaixo:
+                      <div className="mt-4 p-4 bg-stone-50 rounded-2xl border border-stone-100 flex flex-col gap-1 text-left">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] uppercase font-black text-stone-400">Data</span>
+                          <span className="text-sm font-bold text-stone-800">{takeSwapTarget?.date}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] uppercase font-black text-stone-400">Horário</span>
+                          <span className="text-sm font-bold text-stone-800">{takeSwapTarget?.time}</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-1 pt-1 border-t border-stone-100">
+                          <span className="text-[10px] uppercase font-black text-stone-400">Função</span>
+                          <span className="text-sm font-black text-green-700">{takeSwapTarget?.roleName}</span>
+                        </div>
                       </div>
                     </div>
                   </DrawerDescription>
@@ -702,6 +742,32 @@ export default function Home() {
                   <DrawerClose asChild>
                     <Button variant="ghost" className="w-full text-stone-500 font-medium h-12" disabled={isAcceptingSwap}>
                       Cancelar
+                    </Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </div>
+            </DrawerContent>
+          </Drawer>
+
+          {/* Drawer de Datas Indisponíveis */}
+          <Drawer open={isUnavailableDrawerOpen} onOpenChange={setIsUnavailableDrawerOpen}>
+            <DrawerContent>
+              <div className="mx-auto w-full max-w-md p-6 overflow-y-auto max-h-[90vh]">
+                <DrawerHeader className="px-1 text-left">
+                  <DrawerTitle className="text-lg font-black text-stone-800 leading-tight">
+                    Informe os dias que você <span className="text-red-600 underline decoration-red-200 underline-offset-4">não poderá</span> participar
+                  </DrawerTitle>
+                </DrawerHeader>
+                {user && (
+                  <UnavailableForm 
+                    userId={user.id} 
+                    onClose={() => setIsUnavailableDrawerOpen(false)} 
+                  />
+                )}
+                <DrawerFooter className="px-0 pt-4">
+                  <DrawerClose asChild>
+                    <Button variant="outline" className="w-full h-12 rounded-xl text-stone-500 font-bold border-stone-200">
+                      Fechar Calendário
                     </Button>
                   </DrawerClose>
                 </DrawerFooter>

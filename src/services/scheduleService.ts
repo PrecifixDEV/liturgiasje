@@ -217,7 +217,15 @@ export const scheduleService = {
         id,
         role,
         reader_id,
+        member_id,
         is_swap_requested,
+        reader:users!reader_id (
+          full_name,
+          avatar_url
+        ),
+        member:members!member_id (
+          full_name
+        ),
         mass:masses (
           date,
           time,
