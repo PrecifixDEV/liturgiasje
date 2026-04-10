@@ -203,5 +203,29 @@ export const scheduleService = {
       .eq('id', massId)
     
     if (error) throw error
+  },
+
+  async acceptSwap(slotId: string, newReaderId: string) {
+    // 1. Atualizar o slot
+    const { error: slotError } = await supabase
+      .from('schedule_slots')
+      .update({ 
+        reader_id: newReaderId,
+        is_swap_requested: false,
+        is_confirmed: false 
+      })
+      .eq('id', slotId)
+
+    if (slotError) throw slotError
+
+    // 2. Remover aviso vinculado (se houver)
+    const { error: annError } = await supabase
+      .from('announcements')
+      .delete()
+      .eq('related_schedule_slot_id', slotId)
+
+    if (annError) {
+      console.error("Erro ao remover aviso de troca:", annError)
+    }
   }
 }

@@ -26,11 +26,15 @@ interface AnnouncementProps {
   isAdmin?: boolean
   isLoggedIn?: boolean
   authorName?: string
+  authorId?: string
   viewers?: { name: string; at: string }[]
+  related_schedule_slot_id?: string
   onRead?: (id: string) => void
   onUpdate?: (id: string, data: any) => void
   onDelete?: (id: string) => void
   onEdit?: (ann: any) => void
+  onAcceptSwap?: (slotId: string, announcementId: string) => void
+  currentUserId?: string
 }
 
 export function AnnouncementCard({
@@ -45,13 +49,20 @@ export function AnnouncementCard({
   isAdmin,
   isLoggedIn,
   authorName,
+  authorId,
   viewers = [],
+  related_schedule_slot_id,
   onRead,
   onUpdate,
   onDelete,
   onEdit,
+  onAcceptSwap,
+  currentUserId,
 }: AnnouncementProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  
+  // Para fins de comparação, assumimos que se o usuário pode ver o botão, ele está logado.
+  // No page.tsx passaremos o ID do usuário logado se necessário, mas aqui usaremosauthorId.
 
   // Só mostra animação se estiver logado e não tiver lido
   const shouldShowGlow = isLoggedIn && !isRead;
@@ -159,7 +170,7 @@ export function AnnouncementCard({
           >
             <div className="flex items-center gap-2 text-left w-full pr-2">
               <div className={`rounded-full p-2 shrink-0 ${type === 'Troca' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
-                <Megaphone className="h-4 w-4" />
+                {type === 'Troca' ? <RefreshCw className="h-4 w-4" /> : <Megaphone className="h-4 w-4" />}
               </div>
               <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-sm font-semibold text-stone-800 line-clamp-1">{title}</span>
@@ -238,7 +249,7 @@ export function AnnouncementCard({
                 </span>
               </div>
 
-              {isLoggedIn && !isRead && (
+              {isLoggedIn && !isRead && type === 'Aviso' && (
                 <Button
                   onClick={() => onRead?.(id)}
                   variant="outline"
@@ -247,6 +258,18 @@ export function AnnouncementCard({
                 >
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   Confirmar Leitura
+                </Button>
+              )}
+
+              {isLoggedIn && type === 'Troca' && related_schedule_slot_id && authorId !== currentUserId && (
+                <Button
+                  onClick={() => onAcceptSwap?.(related_schedule_slot_id, id)}
+                  variant="outline"
+                  size="sm"
+                  className="w-full h-9 text-xs font-bold border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:text-amber-800 rounded-lg transition-all active:scale-95 shadow-sm"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Aceitar Troca
                 </Button>
               )}
             </div>

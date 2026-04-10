@@ -85,14 +85,20 @@ export function ScheduleCard({
               <div className="flex items-center gap-2 text-stone-600">
                 <Clock className="h-3.5 w-3.5" />
                 <span className="text-xs font-black tracking-tight">
-                  {item.time} {item.specialTitle && <span className="text-stone-400 ml-1"> — {item.specialTitle}</span>}
+                  {item.time} {item.specialTitle && <span className="text-stone-600 ml-1"> — {item.specialTitle}</span>}
                 </span>
               </div>
             </div>
 
               <div className="divide-y divide-stone-100">
                 {item.slots.map((slot) => (
-                  <div key={slot.id} className="flex flex-col px-4 py-3 space-y-1">
+                  <div 
+                    key={slot.id} 
+                    className={cn(
+                      "flex flex-col px-4 py-3 space-y-1 transition-colors",
+                      slot.isConfirmed ? "bg-green-50/70 border-l-4 border-l-green-600" : ""
+                    )}
+                  >
                     <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-3">
                           <div className="relative">
@@ -104,7 +110,9 @@ export function ScheduleCard({
                               <div className={`flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black border transition-all ${
                                 slot.isSwapRequested 
                                   ? "bg-amber-100 text-amber-700 border-amber-200 animate-pulse ring-2 ring-amber-100 ring-offset-1" 
-                                  : "bg-stone-50 text-stone-600 border-stone-200"
+                                  : slot.isConfirmed
+                                    ? "bg-green-100 text-green-700 border-green-200"
+                                    : "bg-stone-50 text-stone-600 border-stone-200"
                               }`}>
                                 {slot.isSwapRequested ? (
                                   <RefreshCw className="h-4 w-4" />
@@ -135,16 +143,25 @@ export function ScheduleCard({
                             </div>
                           )}
                         
-                        {slot.isMine && !slot.isSwapRequested && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full text-stone-400 hover:text-amber-600 hover:bg-amber-50"
-                            onClick={() => onRequestSwap?.(slot.id)}
-                            title="Solicitar Troca"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
+                        {slot.isMine && !slot.isConfirmed && !slot.isSwapRequested && (
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-[10px] font-bold text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
+                              onClick={() => onRequestSwap?.(slot.id)}
+                            >
+                              TROCAR
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-3 text-[10px] font-bold bg-green-700 text-white hover:bg-green-800 rounded-lg shadow-sm"
+                              onClick={() => onConfirm?.(slot.id)}
+                            >
+                              CONFIRMAR
+                            </Button>
+                          </div>
                         )}
 
                         {slot.isSwapRequested && !slot.isMine && (
@@ -158,29 +175,14 @@ export function ScheduleCard({
                             Assumir Troca
                           </Button>
                         )}
+
+                        {slot.isMine && slot.isSwapRequested && (
+                          <Badge variant="outline" className="text-[9px] font-black bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
+                            TROCA SOLICITADA
+                          </Badge>
+                        )}
                       </div>
                     </div>
-
-                    {slot.isMine && !slot.isConfirmed && !slot.isSwapRequested && (
-                      <div className="flex gap-2 w-full pt-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="flex-1 h-8 text-[10px] font-bold bg-green-700 text-white hover:bg-green-800 rounded-lg"
-                          onClick={() => onConfirm?.(slot.id)}
-                        >
-                          Confirmar Leitura
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-[10px] font-bold border-stone-200 text-stone-500 hover:bg-stone-50 rounded-lg"
-                          onClick={() => onRequestSwap?.(slot.id)}
-                        >
-                          Trocar
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

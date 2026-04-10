@@ -49,6 +49,8 @@ export default function Home() {
   const [scheduleToEdit, setScheduleToEdit] = useState<any | null>(null)
   const [scheduleToDelete, setScheduleToDelete] = useState<string[] | null>(null)
   const [isDeletingSchedule, setIsDeletingSchedule] = useState(false)
+  const [swapTargetSlot, setSwapTargetSlot] = useState<any | null>(null)
+  const [isRequestingSwap, setIsRequestingSwap] = useState(false)
   
   // Redirecionamento para Onboarding se não tiver perfil
   useEffect(() => {
@@ -173,6 +175,8 @@ export default function Home() {
                   <AnnouncementCard 
                     key={ann.id} 
                     {...ann} 
+                    authorId={ann.created_by}
+                    currentUserId={user?.id}
                     isAdmin={headerUser?.role === "admin"}
                     isLoggedIn={!!user}
                     onRead={async (id) => {
@@ -200,6 +204,20 @@ export default function Home() {
                     onEdit={(ann) => {
                       setAnnouncementToEdit(ann)
                       setIsSheetOpen(true)
+                    }}
+                    onAcceptSwap={async (slotId, annId) => {
+                      if (!user) {
+                        toast.error("Faça login para aceitar trocas.")
+                        return
+                      }
+                      try {
+                        await scheduleService.acceptSwap(slotId, user.id)
+                        toast.success("Troca aceita com sucesso!")
+                        loadSchedule()
+                        loadAnnouncements()
+                      } catch (error) {
+                        toast.error("Erro ao aceitar troca.")
+                      }
                     }}
                   />
                 ))
@@ -349,13 +367,35 @@ export default function Home() {
                           toast.error("Erro ao confirmar.")
                         }
                       }}
-                      onRequestSwap={async (slotId) => {
+                      onRequestSwap={(slotId) => {
+                        // Encontrar detalhes da missa para o aviso
+                        let targetMass: any = null;
+                        let targetDay: any = null;
+                        
+                        schedule.forEach(mass => {
+                          if (mass.slots.some((s: any) => s.id === slotId)) {
+                            targetMass = mass;
+                          }
+                        });
+
+                        if (targetMass) {
+                          setSwapTargetSlot({
+                            id: slotId,
+                            massDate: format(new Date(targetMass.date + 'T00:00:00'), "dd/MM"),
+                            massTime: targetMass.time.substring(0, 5),
+                            description: targetMass.special_description || "Missa"
+                          });
+                        }
+                      }}
+                      onTakeSwap={async (slotId) => {
+                        if (!user) return;
                         try {
-                          await scheduleService.requestSwap(slotId)
-                          toast.success("Troca solicitada!")
+                          await scheduleService.acceptSwap(slotId, user.id)
+                          toast.success("Você assumiu esta escala!")
                           loadSchedule()
+                          loadAnnouncements()
                         } catch (error) {
-                          toast.error("Erro ao solicitar troca.")
+                          toast.error("Erro ao assumir troca.")
                         }
                       }}
                     />
@@ -438,6 +478,59 @@ export default function Home() {
                   </Button>
                   <DrawerClose asChild>
                     <Button variant="ghost" className="w-full text-stone-500 font-medium h-12">
+                      Cancelar
+                    </Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </div>
+            </DrawerContent>
+          </Drawer>
+
+          {/* Drawer de Confirmação de Troca */}
+          <Drawer open={!!swapTargetSlot} onOpenChange={(open) => !open && !isRequestingSwap && setSwapTargetSlot(null)}>
+            <DrawerContent>
+              <div className="mx-auto w-full max-w-sm">
+                <DrawerHeader className="text-center">
+                  <DrawerTitle className="text-stone-800">Solicitar Troca?</DrawerTitle>
+                  <DrawerDescription>
+                    Um aviso será enviado ao Mural de Recados para que outro leitor possa assumir sua escala no dia {swapTargetSlot?.massDate} às {swapTargetSlot?.massTime}.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <DrawerFooter className="flex flex-col gap-2 pb-8">
+                  <Button 
+                    variant="default"
+                    className="w-full font-bold h-12 rounded-xl bg-amber-600 hover:bg-amber-700 text-white"
+                    disabled={isRequestingSwap}
+                    onClick={async () => {
+                      if (!swapTargetSlot || !user) return
+                      setIsRequestingSwap(true)
+                      try {
+                        await scheduleService.requestSwap(swapTargetSlot.id)
+                        
+                        // Criar o aviso
+                        await announcementService.create({
+                          title: "Solicitação de Troca",
+                          content: `${profile?.full_name || 'Um leitor'} solicitou troca para a missa do dia ${swapTargetSlot.massDate} às ${swapTargetSlot.massTime} (${swapTargetSlot.description}). Quem puder assumir, clique em 'Aceitar Troca' abaixo.`,
+                          type: 'Troca',
+                          expires_at: null, // Opcional: expirar após a data da missa
+                          related_schedule_slot_id: swapTargetSlot.id
+                        } as any)
+
+                        toast.success("Solicitação enviada ao Mural!")
+                        loadSchedule()
+                        loadAnnouncements()
+                        setSwapTargetSlot(null)
+                      } catch (error) {
+                        toast.error("Erro ao processar solicitação.")
+                      } finally {
+                        setIsRequestingSwap(false)
+                      }
+                    }}
+                  >
+                    {isRequestingSwap ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar Solicitação"}
+                  </Button>
+                  <DrawerClose asChild>
+                    <Button variant="ghost" className="w-full text-stone-500 font-medium h-12" disabled={isRequestingSwap}>
                       Cancelar
                     </Button>
                   </DrawerClose>
