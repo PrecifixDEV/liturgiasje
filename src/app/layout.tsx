@@ -4,12 +4,19 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import Script from "next/script";
 import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
+import { PWAHandler } from "@/components/PWAHandler";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Gestão de Leitores - Liturgia SJE",
   description: "Sistema de gestão de escalas e comunicação para o ministério de leitores.",
+  themeColor: "#ffffff",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Liturgia SJE",
+  },
   icons: {
     icon: [
       { url: '/icons/favicon.ico' },
@@ -30,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="h-full" suppressHydrationWarning>
       <body className={`${inter.className} min-h-full bg-background text-foreground antialiased`}>
+        <PWAHandler />
         {children}
         <Toaster />
         <GoogleOneTap />
