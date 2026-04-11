@@ -804,8 +804,8 @@ export default function Home() {
                 )}
                 <DrawerFooter className="px-0 pt-4">
                   <DrawerClose asChild>
-                    <Button variant="outline" className="w-full h-12 rounded-xl text-stone-500 font-bold border-stone-200">
-                      Fechar Calendário
+                    <Button variant="default" className="w-full h-12 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-bold border-none">
+                      Salvar e Fechar Calendário
                     </Button>
                   </DrawerClose>
                 </DrawerFooter>

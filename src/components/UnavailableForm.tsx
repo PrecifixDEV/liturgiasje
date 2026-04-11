@@ -83,12 +83,6 @@ export function UnavailableForm({ userId, onClose }: UnavailableFormProps) {
         />
       </div>
 
-      <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 flex gap-3">
-        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
-        <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-          Isso ajudará os administradores a organizarem a escala, evitando escalar você em dias que você tenha algum compromisso.
-        </p>
-      </div>
     </div>
   )
 }
