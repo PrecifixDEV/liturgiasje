@@ -9,6 +9,21 @@ export interface CreateAnnouncementData {
   audioFile?: File | null
 }
 
+export interface Announcement {
+  id: string
+  title: string
+  content: string
+  type: 'Aviso' | 'Troca'
+  image_url?: string
+  audio_url?: string
+  expires_at?: string
+  created_at: string
+  created_by: string
+  authorName?: string
+  isRead: boolean
+  viewers: { name: string, at: string }[]
+}
+
 export const announcementService = {
   async create(data: CreateAnnouncementData) {
     const { data: { user } } = await supabase.auth.getUser()
