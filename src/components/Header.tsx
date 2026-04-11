@@ -26,13 +26,32 @@ interface HeaderProps {
 export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container relative flex h-20 items-center justify-center px-4 max-w-md mx-auto">
-        {/* Título Centralizado e Grande */}
-        <div className="flex flex-col items-center">
-          <h1 className="text-xl font-bold tracking-tight text-stone-800 sm:text-2xl">
-            Liturgia SJE
-          </h1>
-        </div>
+      <div className="container relative flex h-20 items-center justify-between px-4 max-w-md mx-auto">
+        {/* Logo e Título à Esquerda */}
+        <Link 
+          href="/" 
+          className="flex items-center gap-3 transition-transform active:scale-95 group"
+          onClick={(e) => {
+            if (window.location.pathname === '/') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+        >
+          <img 
+            src="/Logo-Liturgia-SJE.png" 
+            alt="Logo Liturgia SJE" 
+            className="h-14 w-auto drop-shadow-sm group-hover:drop-shadow-md transition-all"
+          />
+          <div className="flex flex-col">
+            <h1 className="text-xl font-black tracking-tight text-stone-800 leading-none">
+              Liturgia SJE
+            </h1>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+              Painel do Leitor
+            </span>
+          </div>
+        </Link>
 
         {/* Perfil/Login à Direita */}
         <div className="absolute right-4 flex items-center gap-4">
@@ -61,7 +80,7 @@ export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   render={
-                    <Link href="/profile" className="flex items-center w-full">
+                    <Link href="/perfil" className="flex items-center w-full">
                       <User className="mr-2 h-4 w-4" />
                       <span>Meu Perfil</span>
                     </Link>
@@ -72,7 +91,7 @@ export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
                   <>
                     <DropdownMenuItem
                       render={
-                        <Link href="/admin/members" className="flex items-center w-full">
+                        <Link href="/admin/membros" className="flex items-center w-full">
                           <Users className="mr-2 h-4 w-4" />
                           <span>Gestão de Membros</span>
                         </Link>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Header } from "@/components/Header"
 import { AnnouncementCard } from "@/components/AnnouncementCard"
 import { ScheduleCard } from "@/components/ScheduleCard"
+import { BirthdayCard } from "@/components/BirthdayCard"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, CalendarOff } from "lucide-react"
 import { addMonths, format, subMonths } from "date-fns"
@@ -14,8 +15,9 @@ import { useAuth } from "@/hooks/useAuth"
 import { AnnouncementForm } from "@/components/AnnouncementForm"
 import { ScheduleForm } from "@/components/ScheduleForm"
 import { UnavailableForm } from "@/components/UnavailableForm"
-import { announcementService } from "@/services/announcementService"
+import { announcementService, Announcement } from "@/services/announcementService"
 import { scheduleService } from "@/services/scheduleService"
+import { userService } from "@/services/userService"
 import { toast } from "sonner"
 import {
   Sheet,
@@ -36,12 +38,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default function Home() {
-  const { user, profile, member, loading, signInWithGoogle, signOut } = useAuth()
+  const { user, profile, member, isMember, loading, signInWithGoogle, signOut } = useAuth()
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [swaps, setSwaps] = useState<any[]>([])
+  const [allBirthdays, setAllBirthdays] = useState<any[]>([])
   const [schedule, setSchedule] = useState<any[]>([])
   const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true)
   const [isLoadingSwaps, setIsLoadingSwaps] = useState(true)
@@ -59,12 +62,12 @@ export default function Home() {
   const [isAcceptingSwap, setIsAcceptingSwap] = useState(false)
   const [isUnavailableDrawerOpen, setIsUnavailableDrawerOpen] = useState(false)
   
-  // Redirecionamento para Onboarding se não tiver perfil
+  // Redirecionamento para Onboarding se não for membro
   useEffect(() => {
-    if (!loading && user && !profile) {
-      router.push("/onboarding")
+    if (!loading && user && !isMember) {
+      router.push("/bemvindo")
     }
-  }, [user, profile, loading])
+  }, [user, isMember, loading, router])
 
   const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1))
   const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1))
@@ -104,9 +107,20 @@ export default function Home() {
     }
   }
 
+  // 3. Carregar Aniversariantes
+  const loadBirthdays = async () => {
+    try {
+      const data = await userService.listBirthdays()
+      setAllBirthdays(data)
+    } catch (error) {
+      console.error("Erro ao carregar aniversários:", error)
+    }
+  }
+
   useEffect(() => {
     loadAnnouncements()
     loadSwaps()
+    loadBirthdays()
   }, [user?.id])
 
   useEffect(() => {
@@ -143,11 +157,11 @@ export default function Home() {
                 {swaps.map((swap) => {
                   const massDate = new Date(swap.mass.date + 'T00:00:00');
                   const roleName = (({
-                    'C': 'C',
-                    '1L': '1L',
-                    '2L': '2L',
-                    'P': 'P',
-                    'L': 'L'
+                    'C': 'Comentarista',
+                    '1L': 'Primeira Leitura',
+                    '2L': 'Segunda Leitura',
+                    'P': 'Preces',
+                    'L': 'Leitura Única'
                   } as Record<string, string>)[swap.role]) || swap.role;
 
                   const requesterName = swap.reader?.full_name || swap.member?.full_name || "---";
@@ -381,6 +395,18 @@ export default function Home() {
             </DrawerContent>
           </Drawer>
 
+          {/* Seção: Aniversariantes do Mês */}
+          <section>
+            <BirthdayCard 
+              currentMonth={currentDate}
+              members={allBirthdays.filter(m => {
+                if (!m.birth_date) return false
+                const birthMonth = new Date(m.birth_date).getUTCMonth()
+                return birthMonth === currentDate.getMonth()
+              })}
+            />
+          </section>
+
           {/* Sessão Interativa: Seletor de Mês */}
           <section className="flex flex-col items-center gap-4 py-2">
             <div className="flex items-center justify-center w-full relative h-8">
@@ -462,10 +488,11 @@ export default function Home() {
                     'P': 4
                   }
 
-                  return sortedDays.map((day: any) => (
+                  return sortedDays.map((day: any, dayIndex: number) => (
                     <ScheduleCard 
-                      key={day.date} 
-                      date={format(new Date(day.date + 'T00:00:00'), "dd 'de' MMMM - EEEE", { locale: ptBR })}
+                      key={dayIndex} 
+                      date={format(new Date(day.date + 'T00:00:00'), "EEEE, dd/MM", { locale: ptBR })}
+                      rawDate={new Date(day.date + 'T00:00:00')}
                       items={day.items.map((item: any) => ({
                         id: item.id,
                         time: item.time.substring(0, 5),
@@ -526,6 +553,17 @@ export default function Home() {
                             massTime: targetMass.time.substring(0, 5),
                             description: targetMass.special_description || "Missa"
                           });
+                        }
+                      }}
+                      onCancelSwap={async (slotId) => {
+                        try {
+                          await scheduleService.cancelSwapRequest(slotId)
+                          toast.success("Pedido de troca cancelado!")
+                          // Recarregar tanto a escala quanto o mural de trocas
+                          loadSchedule()
+                          loadSwaps()
+                        } catch (error) {
+                          toast.error("Erro ao cancelar troca.")
                         }
                       }}
                       onTakeSwap={async (slotId) => {

@@ -19,17 +19,12 @@ export default function OnboardingPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Redirecionar se JÁ for membro ou não estiver logado
+  // Redirecionar se não estiver logado
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        router.push("/")
-      } else if (profile && isMember) {
-        // Se já tem perfil E já é membro, não precisa estar aqui
-        router.push("/")
-      }
+    if (!loading && !user) {
+      router.push("/")
     }
-  }, [user, profile, isMember, loading])
+  }, [user, loading, router])
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return
@@ -65,7 +60,7 @@ export default function OnboardingPage() {
       
       toast.success("Perfil vinculado com sucesso!")
       await refreshProfile()
-      router.push("/profile")
+      router.push("/perfil")
     } catch (error: any) {
       toast.error("Erro ao vincular perfil.")
       console.error("Erro detalhado:", error.message || error.details || error)
@@ -100,7 +95,7 @@ export default function OnboardingPage() {
       
       toast.success("Perfil criado e vinculado!")
       await refreshProfile()
-      router.push("/profile")
+      router.push("/perfil")
     } catch (error) {
       toast.error("Erro ao criar perfil.")
     } finally {
@@ -120,13 +115,13 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-stone-50/50 px-4 py-12">
       <div className="mx-auto max-w-md space-y-8">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-stone-900 font-heading">Bem-vindo!</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-stone-900 font-heading">Seja bem vindo a equipe de Liturgia!</h1>
           <p className="text-stone-500 text-sm">Para continuar, precisamos vincular seu acesso ao seu cadastro de leitor.</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-6">
           <div className="space-y-4">
-            <label className="text-xs font-bold uppercase tracking-widest text-stone-400">Busque seu nome na lista</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-stone-400">Busque pelo seu nome, ou pelo whatsapp</label>
             <div className="flex gap-2">
               <Input 
                 placeholder="Ex: João Silva" 
@@ -161,21 +156,11 @@ export default function OnboardingPage() {
             ) : null}
           </div>
 
-          <div className="relative py-4">
-            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-stone-100" /></div>
-            <div className="relative flex justify-center text-[10px] uppercase tracking-widest text-stone-400">
-              <span className="bg-white px-2 italic">ou</span>
-            </div>
+          <div className="pt-4 border-t border-stone-100">
+            <p className="text-center text-xs text-stone-500 italic">
+              Caso não esteja encontrando seus dados, entre em contato com a coordenação.
+            </p>
           </div>
-
-          <Button 
-            variant="ghost" 
-            onClick={handleCreateNew}
-            className="w-full rounded-xl border border-stone-100 h-12 text-sm text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Não estou na lista, se inscrever como membro
-          </Button>
         </div>
       </div>
     </div>

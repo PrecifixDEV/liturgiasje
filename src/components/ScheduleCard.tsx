@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { CalendarDays, Clock, RefreshCw, CheckCircle, UserPlus, Pencil, Trash2 } from "lucide-react"
+import { CalendarDays, Clock, RefreshCw, CheckCircle, UserPlus, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react"
+import { isPast, isToday, startOfDay } from "date-fns"
 
 interface ReaderSlot {
   id: string
@@ -20,6 +22,7 @@ interface ReaderSlot {
 
 interface ScheduleCardProps {
   date: string
+  rawDate: Date
   items: {
     id: string
     time: string
@@ -28,6 +31,7 @@ interface ScheduleCardProps {
   }[]
   onConfirm?: (slotId: string) => void
   onRequestSwap?: (slotId: string) => void
+  onCancelSwap?: (slotId: string) => void
   onTakeSwap?: (slotId: string) => void
   isAdmin?: boolean
   onEdit?: () => void
@@ -36,14 +40,20 @@ interface ScheduleCardProps {
 
 export function ScheduleCard({
   date,
+  rawDate,
   items,
   onConfirm,
   onRequestSwap,
+  onCancelSwap,
   onTakeSwap,
   isAdmin,
   onEdit,
   onDelete,
 }: ScheduleCardProps) {
+  // Uma missa é "passada" se for antes de hoje (considerando apenas o dia)
+  const isDatePast = isPast(rawDate) && !isToday(rawDate)
+  const [isExpanded, setIsExpanded] = useState(!isDatePast)
+  
   const allMassIds = items.map(item => item.id);
 
   const adminBar = isAdmin && (
@@ -68,16 +78,46 @@ export function ScheduleCard({
   );
 
   return (
-    <Card className="overflow-hidden border-stone-200 bg-white shadow-sm p-0 gap-0">
+    <Card className={cn(
+      "overflow-hidden border-stone-200 bg-white shadow-sm p-0 gap-0 transition-all",
+      isDatePast && !isExpanded && "opacity-80"
+    )}>
       {adminBar}
-      <CardHeader className="bg-stone-50/50 p-4 pb-3 border-b border-stone-100">
-        <div className="flex items-center gap-2 text-stone-700">
-          <CalendarDays className="h-4 w-4" />
-          <span className="text-sm font-bold uppercase tracking-tight">{date}</span>
+      <CardHeader 
+        className={cn(
+          "bg-stone-50/50 p-4 pb-3 border-b border-stone-100 cursor-pointer hover:bg-stone-100/50 transition-colors select-none",
+          isDatePast && !isExpanded && "border-b-0 pb-4"
+        )}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-stone-700">
+            {isDatePast ? (
+              <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+            ) : (
+              <CalendarDays className="h-4 w-4 shrink-0" />
+            )}
+            <span className={cn(
+              "text-sm font-bold uppercase tracking-tight",
+              isDatePast && "text-stone-500 line-through decoration-stone-300"
+            )}>
+              {date}
+            </span>
+            {isDatePast && !isExpanded && (
+              <Badge variant="outline" className="text-[8px] font-bold bg-green-50 text-green-700 border-green-100 py-0 px-1.5 h-4 ml-1">
+                CONCLUÍDO
+              </Badge>
+            )}
+          </div>
+          
+          <div className="text-stone-400">
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
         </div>
       </CardHeader>
       
-      <CardContent className="p-0">
+      {isExpanded && (
+        <CardContent className="p-0 animate-in fade-in slide-in-from-top-1 duration-200">
         {items.map((item, itemIndex) => (
           <div key={item.id} className={cn("flex flex-col", itemIndex > 0 && "border-t-4 border-stone-100")}>
             {/* Sub-header do Horário */}
@@ -130,9 +170,9 @@ export function ScheduleCard({
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          {/* Botão Confirmar/Trocar/Assumir */}
+                          {/* Botão Confirmar/Trocar/Assumir (Apenas se NÃO for passado) */}
                         
-                        {slot.isMine && !slot.isSwapRequested && (
+                        {!isDatePast && slot.isMine && !slot.isSwapRequested && (
                           <div className="flex items-center gap-1.5">
                             <Button
                               variant="ghost"
@@ -155,7 +195,7 @@ export function ScheduleCard({
                           </div>
                         )}
 
-                        {slot.isSwapRequested && !slot.isMine && (
+                        {!isDatePast && slot.isSwapRequested && !slot.isMine && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -168,9 +208,21 @@ export function ScheduleCard({
                         )}
 
                         {slot.isMine && slot.isSwapRequested && (
-                          <Badge variant="outline" className="text-[9px] font-black bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
-                            TROCA SOLICITADA
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="text-[9px] font-black bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
+                              TROCA SOLICITADA
+                            </Badge>
+                            {!isDatePast && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2 text-[10px] font-bold text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                                onClick={() => onCancelSwap?.(slot.id)}
+                              >
+                                CANCELAR
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -180,6 +232,7 @@ export function ScheduleCard({
           </div>
         ))}
       </CardContent>
+      )}
     </Card>
   )
 }

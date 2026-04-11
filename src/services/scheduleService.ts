@@ -122,6 +122,15 @@ export const scheduleService = {
     if (error) throw error
   },
 
+  async cancelSwapRequest(slotId: string) {
+    const { error } = await supabase
+      .from('schedule_slots')
+      .update({ is_swap_requested: false })
+      .eq('id', slotId)
+
+    if (error) throw error
+  },
+
   async getMembersUsage(monthReference: string) {
     const { data, error } = await supabase
       .from('schedule_slots')

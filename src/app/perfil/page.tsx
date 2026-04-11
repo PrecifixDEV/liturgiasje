@@ -63,17 +63,27 @@ export default function ProfilePage() {
     })
   }
 
+  const hasSelectedTimes = formData.preferences?.day_preferences?.[selectedDay]?.length > 0
+  const isFormValid = formData.full_name.trim() !== "" && 
+                     formData.whatsapp.length >= 14 && 
+                     formData.birth_date !== "" && 
+                     hasSelectedTimes
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) return
+    if (!user || !isFormValid) return
     setIsSubmitting(true)
     try {
       await userService.updateProfile(user.id, formData)
       toast.success("Perfil atualizado com sucesso!")
       await refreshProfile()
       router.push("/")
-    } catch (error) {
-      toast.error("Erro ao atualizar perfil.")
+    } catch (error: any) {
+      if (error.message === "NAME_ALREADY_IN_USE") {
+        toast.error("Este nome já está em uso por outro membro. Por favor, use seu nome completo ou adicione um sobrenome.")
+      } else {
+        toast.error("Erro ao atualizar perfil.")
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -203,11 +213,16 @@ export default function ProfilePage() {
               <div className="pt-4">
                 <Button 
                   type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full h-12 rounded-2xl bg-stone-800 hover:bg-black text-white font-bold shadow-lg shadow-stone-200"
+                  disabled={isSubmitting || !isFormValid}
+                  className={cn(
+                    "w-full h-12 rounded-2xl font-bold shadow-lg transition-all",
+                    isFormValid 
+                      ? "bg-stone-800 hover:bg-black text-white shadow-stone-200" 
+                      : "bg-stone-100 text-stone-400 cursor-not-allowed shadow-none"
+                  )}
                 >
                   {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Save className="h-5 w-5 mr-2" />}
-                  Salvar Alterações
+                  {isFormValid ? "Salvar Alterações" : "Preencha todos os campos"}
                 </Button>
               </div>
             </div>
@@ -238,7 +253,7 @@ export default function ProfilePage() {
                 <Button 
                   type="button"
                   variant="outline"
-                  onClick={() => router.push("/onboarding")}
+                  onClick={() => router.push("/bemvindo")}
                   className="w-full rounded-2xl border-stone-100 text-stone-600 text-[10px] font-bold h-11 hover:bg-stone-50"
                 >
                   <UserIcon className="h-3 w-3 mr-2 text-stone-400" />

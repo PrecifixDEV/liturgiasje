@@ -29,11 +29,19 @@ export const memberService = {
     })) as Member[]
   },
 
-  async search(name: string) {
+  async search(query: string) {
+    // Se a query contiver apenas números (ou números com caracteres de telefone), 
+    // criar uma versão flexível para o WhatsApp
+    const digitsOnly = query.replace(/\D/g, "")
+    // Só aplica a busca flexível (%9%9...) se o usuário digitar pelo menos 4 números
+    const whatsappQuery = (digitsOnly && digitsOnly.length >= 4) 
+      ? `%${digitsOnly.split("").join("%")}%` 
+      : `%${query}%`
+
     const { data, error } = await supabase
       .from('members')
       .select('*, claimed_user:users!claimed_by(full_name, avatar_url)')
-      .ilike('full_name', `%${name}%`)
+      .or(`full_name.ilike.%${query}%,whatsapp.ilike.${whatsappQuery}`)
       .eq('is_claimed', false)
       .limit(10)
     
@@ -46,6 +54,18 @@ export const memberService = {
   },
 
   async create(data: { full_name: string, whatsapp?: string, is_claimed?: boolean, claimed_by?: string }) {
+    // 1. Validar unicidade do nome
+    const { data: existing, error: checkError } = await supabase
+      .from('members')
+      .select('id')
+      .ilike('full_name', data.full_name)
+      .maybeSingle()
+
+    if (checkError) throw checkError
+    if (existing) {
+      throw new Error("NAME_ALREADY_IN_USE")
+    }
+
     const { data: member, error } = await supabase
       .from('members')
       .insert(data)
@@ -57,6 +77,21 @@ export const memberService = {
   },
 
   async update(id: string, data: Partial<Member>) {
+    // 1. Validar unicidade do nome se ele for alterado
+    if (data.full_name) {
+      const { data: existing, error: checkError } = await supabase
+        .from('members')
+        .select('id')
+        .ilike('full_name', data.full_name)
+        .neq('id', id)
+        .maybeSingle()
+
+      if (checkError) throw checkError
+      if (existing) {
+        throw new Error("NAME_ALREADY_IN_USE")
+      }
+    }
+
     const { data: member, error } = await supabase
       .from('members')
       .update(data)

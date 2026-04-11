@@ -182,12 +182,14 @@ export default function AdminMembersPage() {
                           <UserKey className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        setEditingMember(member)
-                        setIsSheetOpen(true)
-                      }} className="h-8 w-8 text-stone-400 hover:text-stone-800">
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
+                      {!member.is_claimed && (
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          setEditingMember(member)
+                          setIsSheetOpen(true)
+                        }} className="h-8 w-8 text-stone-400 hover:text-stone-800">
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id)} className="h-8 w-8 text-stone-400 hover:text-red-600">
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -220,8 +222,12 @@ export default function AdminMembersPage() {
                 }
                 loadMembers()
                 setIsSheetOpen(false)
-              } catch (error) {
-                toast.error("Erro ao salvar membro.")
+              } catch (error: any) {
+                if (error.message === "NAME_ALREADY_IN_USE") {
+                  toast.error("Este nome já está em uso por outro membro.")
+                } else {
+                  toast.error("Erro ao salvar membro.")
+                }
               }
             }}
             onClose={() => setIsSheetOpen(false)}

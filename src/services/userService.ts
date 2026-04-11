@@ -40,7 +40,34 @@ export const userService = {
   },
 
   async updateProfile(userId: string, profile: Partial<UserProfile>) {
-    // 1. Atualizar o perfil do usuário
+    // 1. Validar unicidade do nome se ele for alterado
+    if (profile.full_name) {
+      // Primeiro, pegamos o ID do membro atual deste usuário
+      const { data: currentMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('claimed_by', userId)
+        .maybeSingle()
+
+      // Agora buscamos se existe outro membro com o mesmo nome
+      const query = supabase
+        .from('members')
+        .select('id')
+        .ilike('full_name', profile.full_name)
+      
+      if (currentMember) {
+        query.neq('id', currentMember.id)
+      }
+
+      const { data: existingMember, error: checkError } = await query.maybeSingle()
+
+      if (checkError) throw checkError
+      if (existingMember) {
+        throw new Error("NAME_ALREADY_IN_USE")
+      }
+    }
+
+    // 2. Atualizar o perfil do usuário
     const { data, error } = await supabase
       .from('users')
       .update(profile)
@@ -96,6 +123,17 @@ export const userService = {
       .eq('id', userId)
       .select()
       .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async listBirthdays() {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, full_name, avatar_url, birth_date')
+      .not('birth_date', 'is', null)
+      .order('birth_date')
 
     if (error) throw error
     return data
