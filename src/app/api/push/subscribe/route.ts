@@ -8,10 +8,11 @@ export async function POST(request: Request) {
     const { subscription } = await request.json();
     const supabase = await createClient();
     
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !user) {
+      console.error('Auth error in push subscribe:', authError);
+      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
     }
 
     // Upsert a subscrição para o usuário

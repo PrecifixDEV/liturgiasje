@@ -8,19 +8,24 @@ export async function POST(request: Request) {
   try {
     const { title, body, url, targetUserIds } = await request.json();
     
-    // Autenticação básica ou chave de API interna opcional para segurança extra
     const supabase = await createClient();
-    const { data: { user: sender } } = await supabase.auth.getUser();
+    const { data: { user: sender }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !sender) {
+      console.error('Auth error in push send:', authError);
+      return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+    }
 
     // Apenas admins podem disparar notificações genéricas por aqui
-    const { data: senderProfile } = await supabase
+    const { data: senderProfile, error: profileError } = await supabase
       .from('users')
       .select('role')
-      .eq('id', sender?.id)
+      .eq('id', sender.id)
       .single();
 
-    if (senderProfile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (profileError || senderProfile?.role !== 'admin') {
+      console.warn('Unauthorized push attempt by:', sender.id, profileError);
+      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
     // Buscar subscrições
