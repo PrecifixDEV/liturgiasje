@@ -1,5 +1,5 @@
 // Basic Service Worker for PWA
-const CACHE_NAME = 'liturgia-sje-v2';
+const CACHE_NAME = 'liturgia-sje-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/icons/android-chrome-192x192.png',
@@ -13,7 +13,6 @@ self.addEventListener('install', (event) => {
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  // Removido skipWaiting automático para permitir controle manual via UI
 });
 
 self.addEventListener('message', (event) => {
@@ -38,18 +37,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Apenas cachear requisições GET e de mesma origem
   if (event.request.method !== 'GET') return;
   
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request).then((fetchResponse) => {
-        // Não cachear chamadas da API do Supabase ou dados dinâmicos aqui para evitar inconsistências
         return fetchResponse;
       });
-    }).catch(() => {
-      // Offline fallback can be implemented here
-    })
+    }).catch(() => {})
   );
 });
 
@@ -81,12 +76,14 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data.url;
+  // Converter URL relativa para absoluta para comparação correta
+  const urlToOpen = new URL(event.notification.data.url || '/', self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
+        // Compara URLs absolutas
         if (client.url === urlToOpen && 'focus' in client) {
           return client.focus();
         }
@@ -97,4 +94,3 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
-

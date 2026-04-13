@@ -16,15 +16,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
     }
 
-    // Apenas admins podem disparar notificações genéricas por aqui
+    // Apenas admins podem disparar notificações genéricas. 
+    // Usuários comuns podem apenas avisar sobre solicitações de troca.
     const { data: senderProfile, error: profileError } = await supabase
       .from('users')
       .select('role')
       .eq('id', sender.id)
       .single();
 
-    if (profileError || senderProfile?.role !== 'admin') {
-      console.warn('Unauthorized push attempt by:', sender.id, profileError);
+    const isAdmin = senderProfile?.role === 'admin';
+    const isSwapNotification = title === 'Solicitação de Troca';
+
+    if (!isAdmin && !isSwapNotification) {
+      console.warn('Unauthorized push attempt by:', sender.id);
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
