@@ -1,11 +1,10 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
 import { sendPushNotification } from '@/lib/push';
 
 export async function GET(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createClient();
     
     // 1. Buscar aniversariantes de hoje
     // Usamos rpc ou raw sql se necessário, mas aqui faremos uma busca simples 

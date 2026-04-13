@@ -1,5 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
 import { sendPushNotification } from '@/lib/push';
 
@@ -8,7 +7,7 @@ export async function POST(request: Request) {
     const { title, body, url, targetUserIds } = await request.json();
     
     // Autenticação básica ou chave de API interna opcional para segurança extra
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createClient();
     const { data: { user: sender } } = await supabase.auth.getUser();
 
     // Apenas admins podem disparar notificações genéricas por aqui
