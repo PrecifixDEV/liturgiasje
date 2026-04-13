@@ -303,19 +303,25 @@ export default function Home() {
 
             {headerUser?.role === "admin" && (
               <div className="pt-2">
-                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <Sheet open={isSheetOpen} onOpenChange={(open) => {
+                  setIsSheetOpen(open);
+                  if (!open) setAnnouncementToEdit(null);
+                }}>
                   <SheetTrigger render={
-                    <Button 
-                      variant="outline" 
-                      className="w-full h-14 border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 rounded-2xl group transition-all"
-                    >
-                      <Plus className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
-                      Adicionar Recado
-                    </Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full h-14 border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 rounded-2xl group transition-all"
+                        onClick={() => setAnnouncementToEdit(null)}
+                      >
+                        <Plus className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                        Adicionar Recado
+                      </Button>
                   } />
                   <SheetContent side="right" className="w-full sm:max-w-lg border-l-stone-100 p-6 overflow-y-auto">
                     <SheetHeader>
-                      <SheetTitle className="text-stone-800 uppercase tracking-tighter font-black text-xl mb-4">Novo Aviso</SheetTitle>
+                      <SheetTitle className="text-stone-800 uppercase tracking-tighter font-black text-xl mb-4">
+                        {announcementToEdit ? "Editar Aviso" : "Novo Aviso"}
+                      </SheetTitle>
                     </SheetHeader>
                     <AnnouncementForm 
                       initialData={announcementToEdit}
@@ -324,8 +330,7 @@ export default function Home() {
                           if (data.id) {
                             // Atualização
                             await announcementService.update(data.id, {
-                              title: data.title,
-                              content: data.content,
+                              ...data,
                               expires_at: data.expires_at?.toISOString()
                             })
                             toast.success("Aviso atualizado!")

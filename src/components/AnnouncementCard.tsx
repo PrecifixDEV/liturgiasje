@@ -10,9 +10,10 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { CheckCircle2, Megaphone, Music, Maximize2, Calendar as CalendarIcon, Clock, Eye, Pencil, Trash2, User as UserIcon, RefreshCw } from "lucide-react"
+import { CheckCircle2, Megaphone, Music, Maximize2, Calendar as CalendarIcon, Clock, Eye, Pencil, Trash2, User as UserIcon, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 
 interface AnnouncementProps {
   id: string
@@ -20,6 +21,7 @@ interface AnnouncementProps {
   content: string
   type: "Aviso" | "Troca"
   image_url?: string
+  image_urls?: string[]
   audio_url?: string
   expires_at?: string
   createdAt?: string
@@ -44,6 +46,7 @@ export function AnnouncementCard({
   content,
   type,
   image_url,
+  image_urls = [],
   audio_url,
   expires_at,
   createdAt,
@@ -62,6 +65,9 @@ export function AnnouncementCard({
   currentUserId,
 }: AnnouncementProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null)
+  
+  const allImages = (image_urls.length > 0 ? image_urls : [image_url]).filter(Boolean) as string[]
   
   // Para fins de comparação, assumimos que se o usuário pode ver o botão, ele está logado.
   // No page.tsx passaremos o ID do usuário logado se necessário, mas aqui usaremosauthorId.
@@ -73,7 +79,7 @@ export function AnnouncementCard({
     <Card className={`overflow-hidden p-0 gap-0 transition-all duration-500 ${
       shouldShowGlow 
         ? `${isExpanded ? "border-amber-400 bg-white shadow-sm" : "border-amber-400 bg-white shadow-md animate-glow-pulse ring-2 ring-amber-100 ring-offset-1"}` 
-        : isRead ? "border-green-500 bg-white/50 shadow-sm hover:bg-white/80" : "border-stone-200 bg-white/80 shadow-sm"
+        : isRead ? "border-green-500 bg-white shadow-sm hover:bg-white/90" : "border-stone-200 bg-white shadow-sm"
     }`}>
       {/* Barra de Ações Administrativas (Admin Only) */}
       {isAdmin && (
@@ -123,7 +129,7 @@ export function AnnouncementCard({
           {/* Direita: Ações */}
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => onEdit?.({ id, title, content, expires_at })}
+              onClick={() => onEdit?.({ id, title, content, expires_at, image_url, image_urls, audio_url })}
               className="p-1.5 hover:bg-amber-100 rounded-lg text-stone-500 hover:text-stone-800 transition-colors"
                 title="Editar"
             >
@@ -195,35 +201,80 @@ export function AnnouncementCard({
                 {content}
               </p>
               
-              {image_url && (
-                <div className="group relative w-full overflow-hidden rounded-xl border border-stone-100 bg-stone-50 shadow-sm transition-all hover:shadow-md">
-                  <Dialog>
-                    <DialogTrigger 
-                      render={
-                        <button className="relative w-full overflow-hidden cursor-zoom-in">
-                          <img
-                            src={image_url}
-                            alt={title}
-                            className="w-full h-auto max-h-[300px] object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <div className="bg-white/90 p-2 rounded-full shadow-lg">
-                              <Maximize2 className="h-5 w-5 text-stone-800" />
-                            </div>
+              {/* Renderização de Imagens */}
+              {allImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 w-full">
+                  {allImages.map((url, idx) => (
+                    <div key={idx} className={cn(
+                      "group relative overflow-hidden rounded-lg border border-stone-200 bg-stone-50 shadow-sm transition-all hover:shadow-md w-20 h-20 shrink-0"
+                    )}>
+                      <button 
+                        onClick={() => setActiveImageIndex(idx)}
+                        className="relative w-full h-full overflow-hidden cursor-zoom-in"
+                      >
+                        <img
+                          src={url}
+                          alt={`${title} - ${idx + 1}`}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <div className="bg-white/90 p-2 rounded-full shadow-lg">
+                            <Maximize2 className="h-4 w-4 text-stone-800" />
                           </div>
-                        </button>
-                      }
-                    />
-                    <DialogContent className="max-w-[95vw] sm:max-w-3xl p-1 border-none bg-transparent shadow-none overflow-hidden flex items-center justify-center">
-                      <img
-                        src={image_url}
-                        alt={title}
-                        className="w-full h-full object-contain rounded-lg animate-in zoom-in-95 duration-200"
-                      />
-                    </DialogContent>
-                  </Dialog>
+                        </div>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
+
+              {/* Lightbox / Diálogo Expandido Único */}
+              <Dialog 
+                open={activeImageIndex !== null} 
+                onOpenChange={(open) => !open && setActiveImageIndex(null)}
+              >
+                <DialogContent className="max-w-[95vw] sm:max-w-4xl p-1 border-none bg-black/95 shadow-2xl overflow-hidden flex items-center justify-center">
+                  {activeImageIndex !== null && (
+                    <div className="relative group/lightbox w-full h-full flex items-center justify-center min-h-[60vh]">
+                      <img
+                        src={allImages[activeImageIndex]}
+                        alt={title}
+                        className="max-w-full max-h-[85vh] object-contain rounded-lg animate-in zoom-in-95 duration-200"
+                      />
+                      
+                      {/* Navegação */}
+                      {allImages.length > 1 && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveImageIndex((prev) => (prev! - 1 + allImages.length) % allImages.length);
+                            }}
+                            className="absolute left-4 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all active:scale-95 z-50 shadow-lg"
+                          >
+                            <ChevronLeft className="h-6 w-6" />
+                          </button>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveImageIndex((prev) => (prev! + 1) % allImages.length);
+                            }}
+                            className="absolute right-4 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-sm transition-all active:scale-95 z-50 shadow-lg"
+                          >
+                            <ChevronRight className="h-6 w-6" />
+                          </button>
+
+                          {/* Contador */}
+                          <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-white/90 border border-white/10">
+                            {activeImageIndex + 1} / {allImages.length}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
 
               {audio_url && (
                 <div className="group relative flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-3 pt-4 shadow-sm transition-all hover:border-amber-200 hover:shadow-md">

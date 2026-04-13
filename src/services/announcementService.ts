@@ -1,11 +1,22 @@
 import { supabase } from "@/lib/supabase"
 
+/**
+ * Extrai o caminho relativo do arquivo dentro do bucket a partir de uma URL pública do Supabase.
+ */
+function extractPathFromUrl(url: string, bucketName: string = 'announcement_media'): string | null {
+  if (!url) return null
+  const searchStr = `/storage/v1/object/public/${bucketName}/`
+  const index = url.indexOf(searchStr)
+  if (index === -1) return null
+  return url.substring(index + searchStr.length)
+}
+
 export interface CreateAnnouncementData {
   title: string
   content: string
   type: 'Aviso' | 'Troca'
   expires_at: Date | null
-  imageFile?: File | null
+  imageFiles?: File[] | null
   audioFile?: File | null
 }
 
@@ -15,6 +26,7 @@ export interface Announcement {
   content: string
   type: 'Aviso' | 'Troca'
   image_url?: string
+  image_urls?: string[]
   audio_url?: string
   expires_at?: string
   created_at: string
@@ -29,26 +41,28 @@ export const announcementService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error("Usuário não autenticado")
 
-    let imageUrl = ""
+    const imageUrls: string[] = []
     let audioUrl = ""
 
-    // 1. Upload de Imagem se houver
-    if (data.imageFile) {
-      const fileExt = data.imageFile.name.split('.').pop()
-      const fileName = `${Math.random()}.${fileExt}`
-      const filePath = `announcements/images/${fileName}`
+    // 1. Upload de Imagens se houver
+    if (data.imageFiles && data.imageFiles.length > 0) {
+      for (const file of data.imageFiles) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random()}.${fileExt}`
+        const filePath = `announcements/images/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('announcement_media')
-        .upload(filePath, data.imageFile)
+        const { error: uploadError } = await supabase.storage
+          .from('announcement_media')
+          .upload(filePath, file)
 
-      if (uploadError) throw uploadError
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('announcement_media')
-        .getPublicUrl(filePath)
-      
-      imageUrl = publicUrl
+        if (uploadError) throw uploadError
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('announcement_media')
+          .getPublicUrl(filePath)
+        
+        imageUrls.push(publicUrl)
+      }
     }
 
     // 2. Upload de Áudio se houver
@@ -77,7 +91,8 @@ export const announcementService = {
         title: data.title,
         content: data.content,
         type: data.type,
-        image_url: imageUrl,
+        image_url: imageUrls[0] || "", // Mantém para retrocompatibilidade
+        image_urls: imageUrls,
         audio_url: audioUrl,
         expires_at: data.expires_at?.toISOString(),
         created_by: user.id
@@ -117,6 +132,38 @@ export const announcementService = {
   },
 
   async delete(id: string) {
+    // 1. Buscar o anúncio para saber quais arquivos deletar
+    const { data: ann } = await supabase
+      .from('announcements')
+      .select('image_url, image_urls, audio_url')
+      .eq('id', id)
+      .single()
+
+    if (ann) {
+      const pathsToDelete: string[] = []
+      
+      // Coletar caminhos de imagens
+      const urls = [...(ann.image_urls || []), ann.image_url].filter(Boolean) as string[]
+      urls.forEach(url => {
+        const path = extractPathFromUrl(url)
+        if (path) pathsToDelete.push(path)
+      })
+
+      // Coletar caminho de áudio
+      if (ann.audio_url) {
+        const path = extractPathFromUrl(ann.audio_url)
+        if (path) pathsToDelete.push(path)
+      }
+
+      // Deletar arquivos do Storage
+      if (pathsToDelete.length > 0) {
+        await supabase.storage
+          .from('announcement_media')
+          .remove(pathsToDelete)
+      }
+    }
+
+    // 2. Deletar o registro no banco
     const { error } = await supabase
       .from('announcements')
       .delete()
@@ -137,9 +184,98 @@ export const announcementService = {
   },
 
   async update(id: string, data: any) {
+    const { imageFiles, audioFile, ...rest } = data
+    const finalData = { ...rest }
+
+    // 1. Upload de Novas Imagens se houver
+    if (imageFiles && imageFiles.length > 0) {
+      const newUrls: string[] = []
+      for (const file of imageFiles) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random()}.${fileExt}`
+        const filePath = `announcements/images/${fileName}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('announcement_media')
+          .upload(filePath, file)
+
+        if (uploadError) throw uploadError
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('announcement_media')
+          .getPublicUrl(filePath)
+        
+        newUrls.push(publicUrl)
+      }
+      
+      // Combinar com as URLs existentes passadas no rest.image_urls
+      finalData.image_urls = [...(rest.image_urls || []), ...newUrls]
+    }
+    
+    // Garantir que image_url esteja sempre sincronizado com o primeiro item do array
+    if (finalData.image_urls) {
+      finalData.image_url = finalData.image_urls[0] || ""
+    }
+
+    // 2. Upload de Novo Áudio se houver
+    if (audioFile) {
+      const fileExt = audioFile.name.split('.').pop()
+      const fileName = `${Math.random()}.${fileExt}`
+      const filePath = `announcements/audio/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('announcement_media')
+        .upload(filePath, audioFile)
+
+      if (uploadError) throw uploadError
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('announcement_media')
+        .getPublicUrl(filePath)
+      
+      finalData.audio_url = publicUrl
+    } else if (data.audio_url === null || data.audio_url === "") {
+      finalData.audio_url = ""
+    }
+
+    // 0. Antes de atualizar, verificar mídias removidas para limpar o Storage
+    const { data: oldAnn } = await supabase
+      .from('announcements')
+      .select('image_urls, audio_url')
+      .eq('id', id)
+      .single()
+
+    if (oldAnn) {
+      const removedFiles: string[] = []
+      
+      // Verificar imagens removidas
+      if (oldAnn.image_urls && Array.isArray(oldAnn.image_urls)) {
+        const newUrls = finalData.image_urls || []
+        oldAnn.image_urls.forEach((oldUrl: string) => {
+          if (!newUrls.includes(oldUrl)) {
+            const path = extractPathFromUrl(oldUrl)
+            if (path) removedFiles.push(path)
+          }
+        })
+      }
+
+      // Verificar áudio removido
+      if (oldAnn.audio_url && finalData.audio_url !== undefined && finalData.audio_url !== oldAnn.audio_url) {
+        const path = extractPathFromUrl(oldAnn.audio_url)
+        if (path) removedFiles.push(path)
+      }
+
+      if (removedFiles.length > 0) {
+        await supabase.storage
+          .from('announcement_media')
+          .remove(removedFiles)
+          .catch(err => console.error("Erro ao limpar arquivos antigos:", err))
+      }
+    }
+
     const { error } = await supabase
       .from('announcements')
-      .update(data)
+      .update(finalData)
       .eq('id', id)
 
     if (error) throw error

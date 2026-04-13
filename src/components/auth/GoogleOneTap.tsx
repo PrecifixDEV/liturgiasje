@@ -41,14 +41,16 @@ export function GoogleOneTap() {
           }
         },
         auto_select: false,
-        use_fedcm_for_prompt: false, // Desativado para maior estabilidade no localhost
+        use_fedcm_for_prompt: true,
         itp_support: true,
         cancel_on_tap_outside: true,
       })
 
       window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed()) {
-          console.log("One Tap não exibido:", notification.getNotDisplayedReason())
+        // FedCM gerencia a exibição de forma privada no navegador.
+        // Métodos como isNotDisplayed() e getNotDisplayedReason() foram removidos conforme diretrizes da FedCM.
+        if (notification.isSkippedMoment()) {
+          console.log("One Tap pulado.")
         }
       })
     }

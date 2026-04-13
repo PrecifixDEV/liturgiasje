@@ -67,7 +67,7 @@
 
 
 :root {
-  --background: oklch(0.985 0.01 45); /* #FDF8F5 - Sand */
+  --background: #FFFEE5; /* #FFFEE5 - Soft Yellow */
   --foreground: oklch(0.35 0.05 45);  /* #5D4037 - Brown */
   --card: oklch(0.99 0.005 45);
   --card-foreground: oklch(0.35 0.05 45);
