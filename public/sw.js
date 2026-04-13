@@ -1,5 +1,5 @@
 // Basic Service Worker for PWA
-const CACHE_NAME = 'liturgia-sje-v1';
+const CACHE_NAME = 'liturgia-sje-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/icons/android-chrome-192x192.png',
@@ -13,7 +13,13 @@ self.addEventListener('install', (event) => {
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  self.skipWaiting();
+  // Removido skipWaiting automático para permitir controle manual via UI
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {
@@ -46,3 +52,49 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// --- Início da lógica de Notificações Push ---
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body || 'Nova atualização no Liturgia SJE',
+      icon: '/Logo-Liturgia-SJE.png', 
+      badge: '/Logo-Liturgia-SJE.png',
+      data: {
+        url: data.url || '/'
+      },
+      vibrate: [100, 50, 100]
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'Liturgia SJE', options)
+    );
+  } catch (error) {
+    console.error('Erro ao processar notificação push:', error);
+  }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const urlToOpen = event.notification.data.url;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+

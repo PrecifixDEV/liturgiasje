@@ -183,6 +183,17 @@ export const scheduleService = {
       if (slotsError) throw slotsError
     }
 
+    // 3. Disparar Notificação Push
+    fetch('/api/push/send', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Nova Escala Disponível',
+        body: `A escala para ${massData.date} já está pronta!`,
+        url: '/escola' // User rule: use portuguese for paths. Escala -> /escala
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    }).catch(err => console.error('Erro ao disparar push:', err));
+
     return mass
   },
 

@@ -99,6 +99,17 @@ export const announcementService = {
       })
 
     if (error) throw error
+
+    // 4. Disparar Notificação Push
+    fetch('/api/push/send', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Novo Recado',
+        body: data.title,
+        url: '/avisos'
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    }).catch(err => console.error('Erro ao disparar push:', err));
   },
 
   async list(userId?: string) {
