@@ -1,20 +1,21 @@
 import webpush from 'web-push';
 
-if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-  console.warn('VAPID keys are not set. Push notifications will not work.');
-}
-
-webpush.setVapidDetails(
-  'mailto:contato@liturgiasje.com.br',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
-
 export async function sendPushNotification(
   subscription: any,
   payload: { title: string; body: string; url?: string }
 ) {
+  if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    console.warn('VAPID keys are not set. Push notifications will not work.');
+    return { success: false, error: 'keys_not_set' };
+  }
+
   try {
+    webpush.setVapidDetails(
+      'mailto:contato@liturgiasje.com.br',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+
     const pushPayload = JSON.stringify({
       title: payload.title,
       body: payload.body,
