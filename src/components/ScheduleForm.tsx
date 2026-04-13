@@ -64,6 +64,7 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
   const [isSaving, setIsSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [unavailableUserIds, setUnavailableUserIds] = useState<string[]>([])
+  const [hasExistingScale, setHasExistingScale] = useState(false)
 
   const monthRef = format(currentMonth, "yyyy-MM")
 
@@ -86,10 +87,20 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
 
   const loadUnavailableForDate = async (d: string) => {
     try {
-      const ids = await unavailableService.listManyByDate(d)
+      const [ids, existingMasses] = await Promise.all([
+        unavailableService.listManyByDate(d),
+        scheduleService.checkMassExists(d)
+      ])
       setUnavailableUserIds(ids)
+      
+      // Se não houver data inicial (nova escala) e já existirem missas, avisar
+      if (!initialData && existingMasses.length > 0) {
+        setHasExistingScale(true)
+      } else {
+        setHasExistingScale(false)
+      }
     } catch (error) {
-      console.error("Erro ao carregar indisponibilidades:", error)
+      console.error("Erro ao carregar indisponibilidades/duplicidade:", error)
     }
   }
 
@@ -178,16 +189,16 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
 
   const removeSession = async (tempId: string, dbId?: string) => {
     if (dbId) {
-      if (!confirm("Deseja realmente excluir este horário permanentemente?")) return
       try {
         await scheduleService.deleteMass(dbId)
-        toast.success("Horário excluído do banco de dados.")
+        toast.success("Horário excluído.")
       } catch (error) {
+        console.error("Erro ao excluir:", error)
         toast.error("Erro ao excluir horário.")
         return
       }
     }
-    setSessions(sessions.filter(s => s.tempId !== tempId))
+    setSessions(prev => prev.filter(s => s.tempId !== tempId))
   }
 
   const updateSessionField = (tempId: string, field: keyof Session, value: any) => {
@@ -322,51 +333,72 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
 
           <div className="h-px bg-stone-100 mt-1" />
 
+          {/* Aviso de Escala Existente */}
+          {hasExistingScale && (
+            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3 animate-in fade-in zoom-in duration-300">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-amber-900 leading-tight">
+                  Já existe uma escala para este dia!
+                </p>
+                <p className="text-[10px] text-amber-700 leading-snug">
+                  Se você deseja adicionar mais horários a este dia, cancele este formulário e edite o card que já aparece no mural.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Lista de Sessões (Horários) */}
           {sessions.map((sess, sessIndex) => (
             <div key={sess.tempId} className="space-y-3 p-4 rounded-2xl border border-stone-200 bg-white relative shadow-sm">
               
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] uppercase font-black text-stone-400 tracking-widest">
-                  Horário #{sessIndex + 1}
-                </span>
-                {sessions.length > 1 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 text-[10px] font-bold text-red-500 hover:text-red-600 hover:bg-red-50 px-2"
-                    onClick={() => removeSession(sess.tempId, sess.dbId)}
-                  >
-                    <Trash2 className="mr-1 h-3 w-3" />
-                    Excluir
-                  </Button>
-                )}
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-100">
+                <div className="flex flex-col">
+                  <h3 className="text-sm font-bold tracking-tight text-stone-500 leading-tight">
+                    Missa<br />{sess.time || `#${sessIndex + 1}`}
+                  </h3>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Horário</Label>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+                      <Input 
+                        type="time" 
+                        value={sess.time}
+                        onChange={(e) => updateSessionField(sess.tempId, 'time', e.target.value)}
+                        className="pl-10 h-10 w-32 rounded-xl bg-stone-50/50 border-stone-200"
+                      />
+                    </div>
+                  </div>
+                  {sessions.length > 1 && (
+                    <button 
+                      type="button"
+                      className="h-10 w-10 flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors focus:outline-none"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        removeSession(sess.tempId, sess.dbId)
+                      }}
+                      title="Excluir Horário"
+                    >
+                      <Trash2 className="h-4 w-4 pointer-events-none" />
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Horário</Label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
-                    <Input 
-                      type="time" 
-                      value={sess.time}
-                      onChange={(e) => updateSessionField(sess.tempId, 'time', e.target.value)}
-                      className="pl-10 h-10 rounded-xl bg-stone-50/50"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Descrição</Label>
-                  <div className="relative">
-                    <Type className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
-                    <Input 
-                      placeholder="" 
-                      value={sess.description}
-                      onChange={(e) => updateSessionField(sess.tempId, 'description', e.target.value)}
-                      className="pl-10 h-10 rounded-xl bg-stone-50/50"
-                    />
-                  </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Descrição</Label>
+                <div className="relative">
+                  <Type className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+                  <Input 
+                    placeholder="" 
+                    value={sess.description}
+                    onChange={(e) => updateSessionField(sess.tempId, 'description', e.target.value)}
+                    className="pl-10 h-10 rounded-xl bg-stone-50/50 border-stone-200"
+                  />
                 </div>
               </div>
 

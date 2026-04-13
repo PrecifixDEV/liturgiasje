@@ -821,7 +821,7 @@ export default function Home() {
           {/* Versão do App */}
           <div className="mt-12 mb-8 flex justify-center">
             <span className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">
-              Versão 1.05
+              Versão 1.11
             </span>
           </div>
         </div>

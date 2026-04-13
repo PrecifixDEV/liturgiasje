@@ -272,5 +272,15 @@ export const scheduleService = {
       .select()
 
     if (slotError) throw slotError
+  },
+
+  async checkMassExists(date: string) {
+    const { data, error } = await supabase
+      .from('masses')
+      .select('id')
+      .eq('date', date)
+
+    if (error) throw error
+    return data || []
   }
 }
