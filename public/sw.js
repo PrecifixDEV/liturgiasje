@@ -37,6 +37,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // 1. Não cachear o próprio Service Worker para garantir que atualizações sejam detectadas
+  if (event.request.url.includes('sw.js')) return;
+
+  // 2. Apenas cachear requisições GET e de mesma origem
   if (event.request.method !== 'GET') return;
   
   event.respondWith(

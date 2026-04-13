@@ -107,13 +107,16 @@ export function PWAHandler() {
 
           console.log('PWA Service Worker registrado com sucesso:', registration.scope)
           
+          // Forçar uma checagem de atualização imediata e depois a cada 10 minutos
+          registration.update();
+          
           // Tentar subscrever para notificações após registro bem sucedido
           await subscribeToNotifications(registration);
 
-          // Verificar atualizações manualmente a cada hora
+          // Verificar atualizações manualmente frequentes para maior agilidade
           setInterval(() => {
             registration.update();
-          }, 60 * 60 * 1000);
+          }, 10 * 60 * 1000);
 
         } catch (error) {
           console.error('Erro ao registrar PWA Service Worker:', error)
