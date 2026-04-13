@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabaseServer';
 import { NextResponse } from 'next/server';
 import { sendPushNotification } from '@/lib/push';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
