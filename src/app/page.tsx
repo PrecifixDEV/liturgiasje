@@ -149,7 +149,7 @@ export default function Home() {
             <section className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <RefreshCw className="h-3.5 w-3.5 text-amber-600 animate-spin-slow" />
-                <h2 className="text-xs font-black uppercase tracking-widest text-amber-600">
+                <h2 className="text-xl font-black tracking-tight text-amber-600">
                   Solicitações de Troca
                 </h2>
               </div>
@@ -224,7 +224,7 @@ export default function Home() {
           {/* Sessão 1: Mural de Recados */}
           <section className="space-y-4">
             <div className="flex items-center justify-center px-1">
-              <h2 className="text-xs font-black uppercase tracking-widest text-stone-900 text-center">
+              <h2 className="text-xl font-black tracking-tight text-stone-800 text-center">
                 Mural de Recados
               </h2>
             </div>
@@ -415,7 +415,7 @@ export default function Home() {
           {/* Sessão Interativa: Seletor de Mês */}
           <section className="flex flex-col items-center gap-4 py-2">
             <div className="flex items-center justify-center w-full relative h-8">
-              <h2 className="text-xs font-black uppercase tracking-widest text-stone-900">
+              <h2 className="text-xl font-black tracking-tight text-stone-800">
                 Escala de Leitores
               </h2>
               {user && (
@@ -821,7 +821,7 @@ export default function Home() {
           {/* Versão do App */}
           <div className="mt-12 mb-8 flex justify-center">
             <span className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">
-              Versão 1.03
+              Versão 1.05
             </span>
           </div>
         </div>
