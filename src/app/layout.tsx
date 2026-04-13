@@ -9,6 +9,7 @@ import { PWAHandler } from "@/components/PWAHandler";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://liturgiasje.vercel.app"),
   title: "Gestão de Leitores - Liturgia SJE",
   description: "Sistema de gestão de escalas e comunicação para o ministério de leitores.",
   appleWebApp: {
