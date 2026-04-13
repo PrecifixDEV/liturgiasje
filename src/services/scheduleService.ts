@@ -120,6 +120,17 @@ export const scheduleService = {
       .eq('id', slotId)
 
     if (error) throw error
+
+    // Disparar Notificação Push para todos avisando da solicitação de troca
+    fetch('/api/push/send', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: 'Solicitação de Troca',
+        body: 'Alguém solicitou uma troca de escala. Confira no mural!',
+        url: '/'
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    }).catch(err => console.error('Erro ao disparar push de troca:', err));
   },
 
   async cancelSwapRequest(slotId: string) {
@@ -189,7 +200,7 @@ export const scheduleService = {
       body: JSON.stringify({
         title: 'Nova Escala Disponível',
         body: `A escala para ${massData.date} já está pronta!`,
-        url: '/escola' // User rule: use portuguese for paths. Escala -> /escala
+        url: '/'
       }),
       headers: { 'Content-Type': 'application/json' }
     }).catch(err => console.error('Erro ao disparar push:', err));

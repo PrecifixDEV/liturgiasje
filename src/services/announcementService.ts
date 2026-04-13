@@ -106,7 +106,7 @@ export const announcementService = {
       body: JSON.stringify({
         title: 'Novo Recado',
         body: data.title,
-        url: '/avisos'
+        url: '/'
       }),
       headers: { 'Content-Type': 'application/json' }
     }).catch(err => console.error('Erro ao disparar push:', err));
