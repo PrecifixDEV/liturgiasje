@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Sistema de gestão de escalas e comunicação para o ministério de leitores.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#ffffff',
+    background_color: '#322113',
+    theme_color: '#322113',
     icons: [
       {
         src: '/icons/android-chrome-192x192.png',
