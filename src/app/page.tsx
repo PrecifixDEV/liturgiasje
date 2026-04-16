@@ -145,7 +145,7 @@ export default function Home() {
         <div className="h-full overflow-y-auto px-4 py-6 space-y-8 pb-20">
           
           {/* Seção Nova: Solicitações de Troca */}
-          {swaps.length > 0 && (
+          {swaps.filter(s => s.mass).length > 0 && (
             <section className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <RefreshCw className="h-3.5 w-3.5 text-amber-600 animate-spin-slow" />
@@ -154,7 +154,7 @@ export default function Home() {
                 </h2>
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
-                {swaps.map((swap) => {
+                {swaps.filter(s => s.mass).map((swap) => {
                   const massDate = new Date(swap.mass.date + 'T00:00:00');
                   const roleName = (({
                     'C': 'Comentarista',
@@ -171,6 +171,7 @@ export default function Home() {
                     <button
                       key={swap.id}
                       onClick={() => {
+                        if (!swap.mass) return;
                         // Navegar para o mês da troca se necessário
                         const swapMonth = new Date(swap.mass.date).getMonth();
                         const currentMonth = currentDate.getMonth();
@@ -212,7 +213,7 @@ export default function Home() {
                         </Avatar>
                       </div>
                       <p className="text-[11px] font-bold text-stone-800 leading-snug">
-                        Solicitação para {format(massDate, "dd/MM (EEEE)", { locale: ptBR })} às {swap.mass.time.substring(0, 5)} - {roleName}
+                        Solicitação para {format(massDate, "dd/MM (EEEE)", { locale: ptBR })} às {swap.mass?.time?.substring(0, 5) || '--:--'} - {roleName}
                       </p>
                     </button>
                   );
@@ -281,7 +282,7 @@ export default function Home() {
                       // Buscar detalhes da troca na lista global de swaps
                       const swap = swaps.find(s => s.id === slotId);
                       
-                      if (swap) {
+                      if (swap && swap.mass) {
                         setTakeSwapTarget({
                           slotId,
                           date: format(new Date(swap.mass.date + 'T00:00:00'), "dd/MM/yyyy"),
