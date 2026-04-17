@@ -316,8 +316,7 @@ export default function AdminMembersPage() {
             <DrawerHeader className="text-center">
               <DrawerTitle className="text-stone-800">Excluir Membro?</DrawerTitle>
               <DrawerDescription>
-                Esta ação removerá o membro <strong>{memberToDelete?.full_name}</strong> permanentemente. 
-                Ele deixará de aparecer em escalas e buscas.
+                Esta ação removerá o membro <strong>{memberToDelete?.full_name}</strong>, sua conta de login e todos os registros relacionados (escalas, trocas e indisponibilidades) permanentemente.
               </DrawerDescription>
             </DrawerHeader>
             <DrawerFooter className="flex flex-col gap-2 pb-8">

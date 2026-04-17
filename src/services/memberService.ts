@@ -104,12 +104,16 @@ export const memberService = {
   },
 
   async delete(id: string) {
-    const { error } = await supabase
-      .from('members')
-      .delete()
-      .eq('id', id)
-    
-    if (error) throw error
+    const response = await fetch('/api/admin/members/delete', {
+      method: 'POST',
+      body: JSON.stringify({ memberId: id }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Erro ao excluir membro");
+    }
   },
 
   async claim(memberId: string, userId: string) {
