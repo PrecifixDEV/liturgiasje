@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase"
 import { User } from "@supabase/supabase-js"
 import { userService, UserProfile } from "@/services/userService"
 import { memberService } from "@/services/memberService"

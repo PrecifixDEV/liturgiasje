@@ -1,5 +1,11 @@
-import { createClient } from './supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 
-// Mantemos a exportação da instância 'supabase' para não quebrar o código existente
-// que ainda importa diretamente deste arquivo.
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+// Instância para retrocompatibilidade com componentes existentes
 export const supabase = createClient()
