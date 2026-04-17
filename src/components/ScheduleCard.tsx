@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { CalendarDays, Clock, RefreshCw, CheckCircle, UserPlus, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react"
+import { CalendarDays, Clock, RefreshCw, CheckCircle, UserPlus, Pencil, Trash2, ChevronDown, ChevronUp, X } from "lucide-react"
 import { isPast, isToday, startOfDay } from "date-fns"
 
 interface ReaderSlot {
@@ -137,19 +137,22 @@ export function ScheduleCard({
                       id={`slot-${slot.id}`}
                       className={cn(
                         "flex items-center justify-between p-3 rounded-2xl border border-stone-100/10 transition-all",
+                        isDatePast && slot.isSwapRequested ? "bg-red-50 border-l-4 border-l-red-400" : 
                         slot.isConfirmed && slot.isMine ? "bg-green-50 border-l-4 border-l-green-600" : "bg-stone-50/40"
                       )}
                     >
                     <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-3">
                           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[11px] font-black border transition-all ${
-                            slot.isSwapRequested 
-                              ? "bg-amber-100 text-amber-700 border-amber-200 animate-pulse" 
-                              : slot.isConfirmed
-                                ? "bg-green-100 text-green-700 border-green-200"
-                                : "bg-stone-50 text-stone-600 border-stone-100"
+                            isDatePast && slot.isSwapRequested
+                              ? "bg-red-100 text-red-700 border-red-200"
+                              : slot.isSwapRequested 
+                                ? "bg-amber-100 text-amber-700 border-amber-200 animate-pulse" 
+                                : slot.isConfirmed
+                                  ? "bg-green-100 text-green-700 border-green-200"
+                                  : "bg-stone-50 text-stone-600 border-stone-100"
                           }`}>
-                            {slot.isSwapRequested ? <RefreshCw className="h-4 w-4" /> : slot.role}
+                            {isDatePast && slot.isSwapRequested ? <X className="h-4 w-4" /> : slot.isSwapRequested ? <RefreshCw className="h-4 w-4" /> : slot.role}
                           </div>
                           
                           <div className="flex items-center gap-2 min-w-0">
@@ -209,8 +212,16 @@ export function ScheduleCard({
 
                         {slot.isMine && slot.isSwapRequested && (
                           <div className="flex items-center gap-1.5">
-                            <Badge variant="outline" className="text-[9px] font-black bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
-                              TROCA SOLICITADA
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "text-[9px] font-black",
+                                isDatePast 
+                                  ? "bg-red-50 text-red-700 border-red-200" 
+                                  : "bg-amber-50 text-amber-700 border-amber-200 animate-pulse"
+                              )}
+                            >
+                              {isDatePast ? "Troca Não Realizada" : "TROCA SOLICITADA"}
                             </Badge>
                             {!isDatePast && (
                               <Button
