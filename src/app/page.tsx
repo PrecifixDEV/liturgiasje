@@ -18,6 +18,7 @@ import { UnavailableForm } from "@/components/UnavailableForm"
 import { announcementService, Announcement } from "@/services/announcementService"
 import { scheduleService } from "@/services/scheduleService"
 import { userService } from "@/services/userService"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import {
   Sheet,
@@ -126,6 +127,43 @@ export default function Home() {
   useEffect(() => {
     loadSchedule()
   }, [currentDate])
+
+  // Atualização em Tempo Real (Realtime)
+  useEffect(() => {
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'announcements' },
+        () => loadAnnouncements()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'announcement_views' },
+        () => loadAnnouncements()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'masses' },
+        () => {
+          loadSchedule()
+          loadSwaps()
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'schedule_slots' },
+        () => {
+          loadSchedule()
+          loadSwaps()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id, currentDate])
 
   const headerUser = profile ? {
     full_name: profile.full_name,

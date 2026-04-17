@@ -1,13 +1,5 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from './supabase/client'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Variáveis de ambiente do Supabase não configuradas no cliente.")
-}
-
-export const supabase = createBrowserClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-)
+// Mantemos a exportação da instância 'supabase' para não quebrar o código existente
+// que ainda importa diretamente deste arquivo.
+export const supabase = createClient()

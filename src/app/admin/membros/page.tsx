@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { memberService, Member } from "@/services/memberService"
@@ -40,6 +40,9 @@ export default function AdminMembersPage() {
   const [roleChangeMember, setRoleChangeMember] = useState<Member | null>(null)
   const [isRoleDrawerOpen, setIsRoleDrawerOpen] = useState(false)
   const [isSubmittingRole, setIsSubmittingRole] = useState(false)
+  const [memberToDelete, setMemberToDelete] = useState<Member | null>(null)
+  const [isDeleteDrawerOpen, setIsDeleteDrawerOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Verificar se é admin
   useEffect(() => {
@@ -65,20 +68,36 @@ export default function AdminMembersPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este membro?")) return
+    if (!memberToDelete) return
+    
+    // 1. Atualização Otimista: Removemos o membro do estado local antes da chamada ao servidor
+    const previousMembers = [...members]
+    setMembers(current => current.filter(m => m.id !== id))
+    setIsDeleteDrawerOpen(false)
+    
     try {
+      setIsDeleting(true)
       await memberService.delete(id)
       toast.success("Membro excluído.")
-      loadMembers()
+      // Não precisamos recarregar tudo de novo se a UI otimista funcionou,
+      // mas podemos um loadMembers secundário se quisermos garantir sincronia total.
+      // loadMembers()
     } catch (error) {
+      // 2. Reversão em caso de erro
+      setMembers(previousMembers)
       toast.error("Erro ao excluir membro.")
+    } finally {
+      setIsDeleting(false)
+      setMemberToDelete(null)
     }
   }
 
-  const filteredMembers = members.filter(m => 
-    m.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.whatsapp?.includes(searchTerm)
-  )
+  const filteredMembers = useMemo(() => {
+    return members.filter(m => 
+      m.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.whatsapp?.includes(searchTerm)
+    )
+  }, [members, searchTerm])
 
   const headerUser = profile ? {
     full_name: profile.full_name,
@@ -190,7 +209,15 @@ export default function AdminMembersPage() {
                           <Edit2 className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(member.id)} className="h-8 w-8 text-stone-400 hover:text-red-600">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => {
+                          setMemberToDelete(member)
+                          setIsDeleteDrawerOpen(true)
+                        }} 
+                        className="h-8 w-8 text-stone-400 hover:text-red-600"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -274,6 +301,36 @@ export default function AdminMembersPage() {
               </Button>
               <DrawerClose asChild>
                 <Button variant="ghost" className="w-full text-stone-500 font-medium h-12" disabled={isSubmittingRole}>
+                  Cancelar
+                </Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Drawer de Confirmação de Exclusão */}
+      <Drawer open={isDeleteDrawerOpen} onOpenChange={setIsDeleteDrawerOpen}>
+        <DrawerContent>
+          <div className="mx-auto w-full max-w-sm">
+            <DrawerHeader className="text-center">
+              <DrawerTitle className="text-stone-800">Excluir Membro?</DrawerTitle>
+              <DrawerDescription>
+                Esta ação removerá o membro <strong>{memberToDelete?.full_name}</strong> permanentemente. 
+                Ele deixará de aparecer em escalas e buscas.
+              </DrawerDescription>
+            </DrawerHeader>
+            <DrawerFooter className="flex flex-col gap-2 pb-8">
+              <Button 
+                variant="destructive"
+                className="w-full font-bold h-12 rounded-xl"
+                disabled={isDeleting}
+                onClick={() => memberToDelete && handleDelete(memberToDelete.id)}
+              >
+                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sim, Excluir"}
+              </Button>
+              <DrawerClose asChild>
+                <Button variant="ghost" className="w-full text-stone-500 font-medium h-12" disabled={isDeleting}>
                   Cancelar
                 </Button>
               </DrawerClose>

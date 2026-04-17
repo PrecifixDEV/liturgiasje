@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { useEffect, useState, useMemo } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
 import { userService, UserProfile } from "@/services/userService"
 import { memberService } from "@/services/memberService"
 
 export function useAuth() {
+  const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [member, setMember] = useState<any | null>(null)
@@ -31,12 +32,11 @@ export function useAuth() {
   }
 
   useEffect(() => {
-    // 1. Verificar sessão atual ao montar
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      if (currentUser) {
-        fetchProfile(currentUser.id)
+    // 1. Verificar usuário atual ao montar (Usando getUser para segurança)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      if (user) {
+        fetchProfile(user.id)
       } else {
         setLoading(false)
       }
@@ -57,13 +57,13 @@ export function useAuth() {
     )
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase])
 
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
   }
@@ -71,6 +71,7 @@ export function useAuth() {
   const signOut = async () => {
     await supabase.auth.signOut()
     setProfile(null)
+    setUser(null)
   }
 
   return {
