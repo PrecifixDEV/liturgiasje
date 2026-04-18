@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import Script from "next/script";
 import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
 import { PWAHandler } from "@/components/PWAHandler";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -49,6 +50,7 @@ export default function RootLayout({
           src="https://accounts.google.com/gsi/client" 
           strategy="afterInteractive"
         />
+        <SpeedInsights />
       </body>
     </html>
   );
