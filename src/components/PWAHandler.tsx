@@ -113,10 +113,22 @@ export function PWAHandler() {
           // Tentar subscrever para notificações após registro bem sucedido
           await subscribeToNotifications(registration);
 
-          // Verificar atualizações manualmente frequentes para maior agilidade
+          // Verificar atualizações manualmente frequentes (polling de 5 minutos)
           setInterval(() => {
             registration.update();
-          }, 10 * 60 * 1000);
+          }, 5 * 60 * 1000);
+
+          // Verificar atualizações toda vez que a página ganha foco (ex: usuário abre o app)
+          window.addEventListener('focus', () => {
+            registration.update();
+          });
+
+          // Também checar ao voltar de outra aba
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              registration.update();
+            }
+          });
 
         } catch (error) {
           console.error('Erro ao registrar PWA Service Worker:', error)

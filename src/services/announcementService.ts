@@ -33,7 +33,7 @@ export interface Announcement {
   created_by: string
   authorName?: string
   isRead: boolean
-  viewers: { name: string, at: string }[]
+  viewers: { name: string, at: string, avatar_url?: string | null }[]
 }
 
 export const announcementService = {
@@ -121,7 +121,7 @@ export const announcementService = {
         views:announcement_views(
           user_id,
           viewed_at,
-          user:users(full_name)
+          user:users(full_name, avatar_url)
         )
       `)
       .order('created_at', { ascending: false })
@@ -137,7 +137,8 @@ export const announcementService = {
         isRead: ann.created_by === userId || ann.views?.some((v: any) => v.user_id === userId) || false,
         viewers: ann.views?.map((v: any) => ({
           name: v.user?.full_name || 'Usuário',
-          at: v.viewed_at
+          at: v.viewed_at,
+          avatar_url: v.user?.avatar_url
         })) || []
       }))
   },

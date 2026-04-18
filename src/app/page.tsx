@@ -7,7 +7,7 @@ import { AnnouncementCard } from "@/components/AnnouncementCard"
 import { ScheduleCard } from "@/components/ScheduleCard"
 import { BirthdayCard } from "@/components/BirthdayCard"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, CalendarOff } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, CalendarOff, CheckCircle } from "lucide-react"
 import { addMonths, format, subMonths } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -62,6 +62,7 @@ export default function Home() {
   const [isRequestingSwap, setIsRequestingSwap] = useState(false)
   const [isAcceptingSwap, setIsAcceptingSwap] = useState(false)
   const [isUnavailableDrawerOpen, setIsUnavailableDrawerOpen] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
   
   // Redirecionamento para Onboarding se não for membro
   useEffect(() => {
@@ -101,10 +102,25 @@ export default function Home() {
   const loadSchedule = async () => {
     try {
       setIsLoadingSchedule(true)
-      const data = await scheduleService.listForMonth(currentDate)
+      const isAdmin = headerUser?.role === "admin"
+      const data = await scheduleService.listForMonth(currentDate, isAdmin)
       setSchedule(data)
     } finally {
       setIsLoadingSchedule(false)
+    }
+  }
+
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true)
+      const monthRef = format(currentDate, "yyyy-MM")
+      await scheduleService.publishMonth(monthRef)
+      toast.success("Escala publicada e notificações enviadas!")
+      loadSchedule()
+    } catch (error) {
+      toast.error("Erro ao publicar escala.")
+    } finally {
+      setIsPublishing(false)
     }
   }
 
@@ -349,7 +365,7 @@ export default function Home() {
                   <SheetTrigger render={
                       <Button 
                         variant="outline" 
-                        className="w-full h-14 border-dashed border-stone-300 text-stone-500 hover:text-stone-800 hover:border-stone-400 hover:bg-stone-50 rounded-2xl group transition-all"
+                        className="w-full h-14 border-dashed border-stone-500 text-stone-600 hover:text-stone-800 hover:border-stone-600 hover:bg-stone-50 rounded-2xl group transition-all font-bold"
                         onClick={() => setAnnouncementToEdit(null)}
                       >
                         <Plus className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -471,7 +487,7 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-between w-full bg-white rounded-full border border-stone-200 px-2 py-1.5 shadow-sm">
+            <div className="flex items-center justify-between w-full bg-white rounded-full border border-stone-400 px-2 py-1.5 shadow-sm transition-colors hover:border-stone-500">
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -562,6 +578,7 @@ export default function Home() {
                         }))
                       }))}
                       isAdmin={headerUser?.role === "admin"}
+                      isPublished={day.items.every((i: any) => i.is_published)}
                       onEdit={() => {
                         setScheduleToEdit(day.items) // Passa o array de missas do dia
                         setIsScheduleSheetOpen(true)
@@ -652,7 +669,7 @@ export default function Home() {
                   <SheetTrigger render={
                     <Button 
                       variant="outline" 
-                      className="w-full h-14 border-dashed border-stone-300 text-stone-500 hover:text-amber-700 hover:border-amber-300 hover:bg-amber-50 rounded-2xl group transition-all"
+                      className="w-full h-14 border-dashed border-stone-500 text-stone-600 hover:text-amber-800 hover:border-amber-400 hover:bg-amber-50 rounded-2xl group transition-all font-bold"
                     >
                       <Plus className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
                       Adicionar Missa
@@ -860,9 +877,27 @@ export default function Home() {
           {/* Versão do App */}
           <div className="mt-12 mb-8 flex justify-center">
             <span className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">
-              Versão 1.11
+              Versão 1.12
             </span>
           </div>
+ 
+          {/* Botão Flutuante de Publicação (Apenas para Admin se houver rascunhos) */}
+          {headerUser?.role === "admin" && schedule.some(mass => !mass.is_published) && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md">
+              <Button 
+                className="w-full h-14 bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl shadow-xl border-t border-white/20 animate-in fade-in slide-in-from-bottom-8 duration-500"
+                onClick={handlePublish}
+                disabled={isPublishing}
+              >
+                {isPublishing ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <CheckCircle className="mr-2 h-5 w-5" />
+                )}
+                PUBLICAR ESCALA DE {format(currentDate, "MMMM", { locale: ptBR }).toUpperCase()}
+              </Button>
+            </div>
+          )}
         </div>
       </main>
     </div>

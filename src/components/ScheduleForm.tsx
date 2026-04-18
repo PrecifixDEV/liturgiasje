@@ -134,7 +134,7 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
       })
       setSessions(mappedSessions)
     } else {
-      setSessions([createEmptySession()])
+      setSessions([])
     }
   }, [initialData])
 
@@ -325,8 +325,14 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
               <Input 
                 type="date" 
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="pl-10 h-10 rounded-xl bg-white border-stone-200"
+                onChange={(e) => {
+                  const val = e.target.value
+                  setDate(val)
+                  if (val && sessions.length === 0) {
+                    setSessions([createEmptySession()])
+                  }
+                }}
+                className="pl-10 h-10 rounded-xl bg-white border-stone-600 shadow-sm"
               />
             </div>
           </div>
@@ -348,199 +354,203 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
             </div>
           )}
 
-          {/* Lista de Sessões (Horários) */}
-          {sessions.map((sess, sessIndex) => (
-            <div key={sess.tempId} className="space-y-3 p-4 rounded-2xl border border-stone-200 bg-white relative shadow-sm">
-              
-              <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-100">
-                <div className="flex flex-col">
-                  <h3 className="text-sm font-bold tracking-tight text-stone-500 leading-tight">
-                    Missa<br />{sess.time || `#${sessIndex + 1}`}
-                  </h3>
-                </div>
-                
-                <div className="flex items-center gap-2">
+          {/* Lista de Sessões e Botão de Adicionar outro Horário (Condicional à Data) */}
+          {date && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+              {sessions.map((sess, sessIndex) => (
+                <div key={sess.tempId} className="space-y-3 p-4 rounded-2xl border border-stone-200 bg-white relative shadow-sm">
+                  
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-stone-100">
+                    <div className="flex flex-col">
+                      <h3 className="text-sm font-bold tracking-tight text-stone-500 leading-tight">
+                        Missa<br />{sess.time || `#${sessIndex + 1}`}
+                      </h3>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Horário</Label>
+                        <div className="relative">
+                          <Clock className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+                          <Input 
+                            type="time" 
+                            value={sess.time}
+                            onChange={(e) => updateSessionField(sess.tempId, 'time', e.target.value)}
+                            className="pl-10 h-10 w-32 rounded-xl bg-stone-50/50 border-stone-600"
+                          />
+                        </div>
+                      </div>
+                      {sessions.length > 1 && (
+                        <button 
+                          type="button"
+                          className="h-10 w-10 flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors focus:outline-none"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            removeSession(sess.tempId, sess.dbId)
+                          }}
+                          title="Excluir Horário"
+                        >
+                          <Trash2 className="h-4 w-4 pointer-events-none" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Horário</Label>
+                    <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Descrição</Label>
                     <div className="relative">
-                      <Clock className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
+                      <Type className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
                       <Input 
-                        type="time" 
-                        value={sess.time}
-                        onChange={(e) => updateSessionField(sess.tempId, 'time', e.target.value)}
-                        className="pl-10 h-10 w-32 rounded-xl bg-stone-50/50 border-stone-200"
+                        placeholder="" 
+                        value={sess.description}
+                        onChange={(e) => updateSessionField(sess.tempId, 'description', e.target.value)}
+                        className="pl-10 h-10 rounded-xl bg-stone-50/50 border-stone-600"
                       />
                     </div>
                   </div>
-                  {sessions.length > 1 && (
-                    <button 
-                      type="button"
-                      className="h-10 w-10 flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors focus:outline-none"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        removeSession(sess.tempId, sess.dbId)
-                      }}
-                      title="Excluir Horário"
-                    >
-                      <Trash2 className="h-4 w-4 pointer-events-none" />
-                    </button>
-                  )}
-                </div>
-              </div>
 
-              <div className="space-y-1">
-                <Label className="text-[10px] uppercase font-bold text-stone-400 ml-1">Descrição</Label>
-                <div className="relative">
-                  <Type className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
-                  <Input 
-                    placeholder="" 
-                    value={sess.description}
-                    onChange={(e) => updateSessionField(sess.tempId, 'description', e.target.value)}
-                    className="pl-10 h-10 rounded-xl bg-stone-50/50 border-stone-200"
-                  />
-                </div>
-              </div>
+                  {/* Lista de Slots da Sessão */}
+                  <div className="space-y-1.5 pt-1">
+                    {sess.slots.map((slot) => (
+                      <div key={slot.id} className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 font-black text-[10px] border border-amber-200">
+                          {slot.roleLabel}
+                        </div>
+                        
+                        <div className="flex-1">
+                          <Popover open={slot.isOpen} onOpenChange={(open) => setSlotPopoverOpen(sess.tempId, slot.id, open)}>
+                            <PopoverTrigger render={
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full h-8 justify-between font-bold rounded-lg border-stone-600 bg-white px-2",
+                                  !slot.memberId && "text-stone-500 font-bold"
+                                )}
+                              >
+                                <div className="flex items-center truncate">
+                                  <User className="mr-2 h-3.5 w-3.5 text-stone-400 shrink-0" />
+                                  <span className="truncate text-[13px]">
+                                    {slot.memberId ? slot.memberName : "Selecionar..."}
+                                  </span>
+                                </div>
+                                <Search className="ml-2 h-3 w-3 opacity-50 shrink-0" />
+                              </Button>
+                            } />
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                              <Command>
+                                <CommandInput 
+                                  placeholder="Pesquisar leitor..." 
+                                  value={searchTerm}
+                                  onValueChange={setSearchTerm}
+                                  autoFocus
+                                />
+                                <CommandList>
+                                  <CommandEmpty>Nenhum leitor encontrado.</CommandEmpty>
+                                  <CommandGroup>
+                                    {(() => {
+                                      const sortedMembers = [...members].sort((a, b) => {
+                                        const prefA = checkPreference(a, sess.time, date) ? 1 : 0
+                                        const prefB = checkPreference(b, sess.time, date) ? 1 : 0
+                                        if (prefA !== prefB) return prefB - prefA
 
-              {/* Lista de Slots da Sessão */}
-              <div className="space-y-1.5 pt-1">
-                {sess.slots.map((slot) => (
-                  <div key={slot.id} className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 font-black text-[10px] border border-amber-200">
-                      {slot.roleLabel}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <Popover open={slot.isOpen} onOpenChange={(open) => setSlotPopoverOpen(sess.tempId, slot.id, open)}>
-                        <PopoverTrigger render={
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full h-8 justify-between font-bold rounded-lg border-stone-200 bg-white px-2",
-                              !slot.memberId && "text-stone-400 font-normal"
-                            )}
-                          >
-                            <div className="flex items-center truncate">
-                              <User className="mr-2 h-3.5 w-3.5 text-stone-400 shrink-0" />
-                              <span className="truncate text-[11px]">
-                                {slot.memberId ? slot.memberName : "Selecionar..."}
-                              </span>
-                            </div>
-                            <Search className="ml-2 h-3 w-3 opacity-50 shrink-0" />
-                          </Button>
-                        } />
-                        <PopoverContent className="w-[300px] p-0" align="start">
-                          <Command>
-                            <CommandInput 
-                              placeholder="Pesquisar leitor..." 
-                              value={searchTerm}
-                              onValueChange={setSearchTerm}
-                              autoFocus
-                            />
-                            <CommandList>
-                              <CommandEmpty>Nenhum leitor encontrado.</CommandEmpty>
-                              <CommandGroup>
-                                {(() => {
-                                  const sortedMembers = [...members].sort((a, b) => {
-                                    const prefA = checkPreference(a, sess.time, date) ? 1 : 0
-                                    const prefB = checkPreference(b, sess.time, date) ? 1 : 0
-                                    if (prefA !== prefB) return prefB - prefA
+                                        const unA = a.claimed_by && unavailableUserIds.includes(a.claimed_by) ? 1 : 0
+                                        const unB = b.claimed_by && unavailableUserIds.includes(b.claimed_by) ? 1 : 0
+                                        if (unA !== unB) return unA - unB
 
-                                    const unA = a.claimed_by && unavailableUserIds.includes(a.claimed_by) ? 1 : 0
-                                    const unB = b.claimed_by && unavailableUserIds.includes(b.claimed_by) ? 1 : 0
-                                    if (unA !== unB) return unA - unB
+                                        return a.full_name.localeCompare(b.full_name)
+                                      })
 
-                                    return a.full_name.localeCompare(b.full_name)
-                                  })
-
-                                  return sortedMembers.map((member) => {
-                                    const isUnavailable = member.claimed_by ? unavailableUserIds.includes(member.claimed_by) : false
-                                    const isPreference = checkPreference(member, sess.time, date)
-                                    
-                                    return (
-                                      <CommandItem
-                                        key={member.id}
-                                        value={member.full_name}
-                                        onSelect={() => {
-                                          if (isUnavailable) {
-                                            toast.warning(`${member.full_name} informou que não poderá participar nesta data.`, {
-                                              duration: 5000,
-                                              icon: <AlertCircle className="h-4 w-4 text-amber-600" />
-                                            })
-                                          }
-                                          updateSlotMember(sess.tempId, slot.id, member)
-                                          setSearchTerm("")
-                                        }}
-                                        className="flex items-center justify-between"
-                                      >
-                                        <span className={cn(
-                                          "font-medium transition-colors",
-                                          isUnavailable && "text-red-500 font-bold",
-                                          isPreference && !isUnavailable && "text-green-600 font-bold"
-                                        )}>
-                                          {member.full_name}
-                                          {isUnavailable && " (Indisponível)"}
-                                          {isPreference && !isUnavailable && " (Preferência)"}
-                                        </span>
-                                        <div className="flex items-center gap-2">
-                                          {usageCounts[member.id] > 0 && (
-                                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-md">
-                                              {usageCounts[member.id]}x
+                                      return sortedMembers.map((member) => {
+                                        const isUnavailable = member.claimed_by ? unavailableUserIds.includes(member.claimed_by) : false
+                                        const isPreference = checkPreference(member, sess.time, date)
+                                        
+                                        return (
+                                          <CommandItem
+                                            key={member.id}
+                                            value={member.full_name}
+                                            onSelect={() => {
+                                              if (isUnavailable) {
+                                                toast.warning(`${member.full_name} informou que não poderá participar nesta data.`, {
+                                                  duration: 5000,
+                                                  icon: <AlertCircle className="h-4 w-4 text-amber-600" />
+                                                })
+                                              }
+                                              updateSlotMember(sess.tempId, slot.id, member)
+                                              setSearchTerm("")
+                                            }}
+                                            className="flex items-center justify-between"
+                                          >
+                                            <span className={cn(
+                                              "font-medium transition-colors",
+                                              isUnavailable && "text-red-500 font-bold",
+                                              isPreference && !isUnavailable && "text-green-600 font-bold"
+                                            )}>
+                                              {member.full_name}
+                                              {isUnavailable && " (Indisponível)"}
+                                              {isPreference && !isUnavailable && " (Preferência)"}
                                             </span>
-                                          )}
-                                        </div>
-                                      </CommandItem>
-                                    )
-                                  })
-                                })()}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+                                            <div className="flex items-center gap-2">
+                                              {usageCounts[member.id] > 0 && (
+                                                <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-md">
+                                                  {usageCounts[member.id]}x
+                                                </span>
+                                              )}
+                                            </div>
+                                          </CommandItem>
+                                        )
+                                      })
+                                    })()}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
 
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-stone-300 hover:text-red-500 rounded-lg"
-                      onClick={() => removeSlot(sess.tempId, slot.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-stone-600 hover:text-red-500 rounded-lg"
+                          onClick={() => removeSlot(sess.tempId, slot.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+
+                  {/* Botão de Adicionar Leitura (Dentro da Sessão) */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={
+                      <Button variant="outline" size="sm" className="h-7 px-3 font-black text-[9px] uppercase tracking-wider rounded-lg border-stone-500 text-stone-600 bg-white hover:bg-stone-50">
+                        <Plus className="mr-1 h-3 w-3" />
+                        Adicionar Leitura
+                      </Button>
+                    } />
+                    <DropdownMenuContent align="start" className="rounded-xl p-1.5">
+                      <DropdownMenuItem onClick={() => addSlot(sess.tempId, "C")} className="font-bold text-xs text-stone-700">Comentarista (C)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => addSlot(sess.tempId, "L")} className="font-bold text-xs text-stone-700">Leitor (L)</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => addSlot(sess.tempId, "P")} className="font-bold text-xs text-stone-700">Preces (P)</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                </div>
+              ))}
+
+              {/* Botão de Adicionar outro Horário */}
+              <div className="pt-1">
+                <Button 
+                  variant="outline" 
+                  onClick={addSession}
+                  className="w-full h-10 border-dashed border-stone-500 text-stone-600 font-black rounded-xl hover:bg-stone-100 transition-all text-[10px] uppercase tracking-wider bg-white"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar outro Horário
+                </Button>
               </div>
-
-              {/* Botão de Adicionar Leitura (Dentro da Sessão) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger render={
-                  <Button variant="outline" size="sm" className="h-7 px-3 font-bold text-[9px] uppercase tracking-wider rounded-lg border-stone-200 text-stone-500 hover:bg-stone-50">
-                    <Plus className="mr-1 h-3 w-3" />
-                    Adicionar Leitura
-                  </Button>
-                } />
-                <DropdownMenuContent align="start" className="rounded-xl p-1.5">
-                  <DropdownMenuItem onClick={() => addSlot(sess.tempId, "C")} className="font-bold text-xs text-stone-700">Comentarista (C)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => addSlot(sess.tempId, "L")} className="font-bold text-xs text-stone-700">Leitor (L)</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => addSlot(sess.tempId, "P")} className="font-bold text-xs text-stone-700">Preces (P)</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
             </div>
-          ))}
-
-          {/* Botão de Adicionar outro Horário */}
-          <div className="pt-1">
-            <Button 
-              variant="outline" 
-              onClick={addSession}
-              className="w-full h-10 border-dashed border-stone-300 text-stone-500 font-bold rounded-xl hover:bg-stone-100 transition-all text-xs"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar outro Horário
-            </Button>
-          </div>
+          )}
 
         </div>
       </div>

@@ -2,12 +2,12 @@ import { supabase } from "@/lib/supabase"
 import { startOfMonth, endOfMonth, format } from "date-fns"
 
 export const scheduleService = {
-  async listForMonth(date: Date) {
+  async listForMonth(date: Date, isAdmin: boolean = false) {
     const start = startOfMonth(date)
     const end = endOfMonth(date)
 
     // Buscar missas do mês selecionado
-    const { data: masses, error: massesError } = await supabase
+    let query = supabase
       .from('masses')
       .select(`
         *,
@@ -23,6 +23,12 @@ export const scheduleService = {
           created_at
         )
       `)
+
+    if (!isAdmin) {
+      query = query.eq('is_published', true)
+    }
+
+    const { data: masses, error: massesError } = await query
       .gte('date', format(start, 'yyyy-MM-dd'))
       .lte('date', format(end, 'yyyy-MM-dd'))
       .order('date', { ascending: true })
@@ -194,18 +200,55 @@ export const scheduleService = {
       if (slotsError) throw slotsError
     }
 
-    // 3. Disparar Notificação Push
-    fetch('/api/push/send', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: 'Nova Escala Disponível',
-        body: `A escala para ${massData.date} já está pronta!`,
-        url: '/'
-      }),
-      headers: { 'Content-Type': 'application/json' }
-    }).catch(err => console.error('Erro ao disparar push:', err));
-
     return mass
+  },
+
+  async publishMonth(monthReference: string) {
+    // 1. Marcar todas as missas do mês como publicadas
+    const { data: masses, error: publishError } = await supabase
+      .from('masses')
+      .update({ is_published: true })
+      .eq('month_reference', monthReference)
+      .select('id, date')
+
+    if (publishError) throw publishError
+
+    // 2. Buscar todos os slots e membros para disparar notificações
+    if (masses && masses.length > 0) {
+      const massIds = masses.map(m => m.id)
+      
+      const { data: slots, error: slotsError } = await supabase
+        .from('schedule_slots')
+        .select('member_id')
+        .in('mass_id', massIds)
+        .not('member_id', 'is', null)
+
+      if (slotsError) console.error("Erro ao buscar slots para notificação:", slotsError)
+
+      if (slots && slots.length > 0) {
+        const memberIds = [...new Set(slots.map(s => s.member_id))]
+        
+        const { data: membersList } = await supabase
+          .from('members')
+          .select('claimed_by')
+          .in('id', memberIds)
+
+        const targetUserIds = [...new Set((membersList || []).map(m => m.claimed_by).filter(id => !!id))]
+
+        if (targetUserIds.length > 0) {
+          fetch('/api/push/send', {
+            method: 'POST',
+            body: JSON.stringify({
+              title: 'Nova Escala Publicada! 📅',
+              body: `A escala de ${masses[0].date.substring(0, 7)} foi publicada. Confira seus horários!`,
+              url: '/',
+              targetUserIds
+            }),
+            headers: { 'Content-Type': 'application/json' }
+          }).catch(err => console.error('Erro ao disparar push na publicação:', err));
+        }
+      }
+    }
   },
 
   async updateMass(massId: string, massData: any, slots: { role: string; member_id: string }[]) {

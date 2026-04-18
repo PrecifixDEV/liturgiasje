@@ -34,6 +34,7 @@ interface ScheduleCardProps {
   onCancelSwap?: (slotId: string) => void
   onTakeSwap?: (slotId: string) => void
   isAdmin?: boolean
+  isPublished?: boolean
   onEdit?: () => void
   onDelete?: (massIds: string[]) => void
 }
@@ -47,6 +48,7 @@ export function ScheduleCard({
   onCancelSwap,
   onTakeSwap,
   isAdmin,
+  isPublished = true,
   onEdit,
   onDelete,
 }: ScheduleCardProps) {
@@ -57,29 +59,39 @@ export function ScheduleCard({
   const allMassIds = items.map(item => item.id);
 
   const adminBar = isAdmin && (
-    <div className="flex items-center justify-end gap-2 border-b border-stone-100 bg-stone-50/50 px-3 py-1">
-      <button 
-        onClick={() => onEdit?.()}
-        className="p-1 px-1.5 hover:bg-amber-100 rounded-lg text-stone-500 hover:text-stone-800 transition-colors flex items-center gap-1.5 text-[10px] font-bold"
-        title="Editar Dia"
-      >
-        <Pencil className="h-3.5 w-3.5" />
-        EDITAR DIA
-      </button>
-      <button 
-        onClick={() => onDelete?.(allMassIds)}
-        className="p-1 px-1.5 hover:bg-red-50 rounded-lg text-stone-400 hover:text-red-600 transition-colors flex items-center gap-1.5 text-[10px] font-bold"
-        title="Excluir Dia"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-        EXCLUIR DIA
-      </button>
+    <div className="flex items-center justify-between gap-2 border-b border-stone-100 bg-stone-50/50 px-3 py-1">
+      <div className="flex items-center">
+        {!isPublished && (
+          <Badge variant="outline" className="text-[9px] font-black bg-orange-50 text-orange-600 border-orange-200 py-0 px-2 h-5">
+            RASCUNHO
+          </Badge>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <button 
+          onClick={() => onEdit?.()}
+          className="p-1 px-1.5 hover:bg-amber-100 rounded-lg text-stone-700 hover:text-stone-900 transition-colors flex items-center gap-1.5 text-[10px] font-black"
+          title="Editar Dia"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          EDITAR DIA
+        </button>
+        <button 
+          onClick={() => onDelete?.(allMassIds)}
+          className="p-1 px-1.5 hover:bg-red-50 rounded-lg text-stone-600 hover:text-red-700 transition-colors flex items-center gap-1.5 text-[10px] font-black"
+          title="Excluir Dia"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          EXCLUIR DIA
+        </button>
+      </div>
     </div>
   );
 
   return (
     <Card className={cn(
       "overflow-hidden border-stone-200 bg-white shadow-sm p-0 gap-0 transition-all",
+      !isPublished && isAdmin && "border-2 border-orange-500 ring-2 ring-orange-100",
       isDatePast && !isExpanded && "opacity-80"
     )}>
       {adminBar}

@@ -101,7 +101,7 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="border-stone-200 focus-visible:ring-stone-400"
+          className="border-stone-600 focus-visible:ring-stone-400 font-medium"
         />
       </div>
 
@@ -113,7 +113,7 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
           value={content}
           onChange={(e) => setContent(e.target.value)}
           required
-          className="min-h-[120px] border-stone-200 focus-visible:ring-stone-400"
+          className="min-h-[120px] border-stone-600 focus-visible:ring-stone-400 font-medium"
         />
       </div>
 
@@ -159,10 +159,10 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
               />
               <Label
                 htmlFor="image-upload"
-                className="flex flex-col items-center justify-center h-full w-full rounded-lg border-2 border-dashed border-stone-100 bg-white cursor-pointer transition-all hover:bg-stone-50"
+                className="flex flex-col items-center justify-center h-full w-full rounded-lg border-2 border-dashed border-stone-500 bg-white cursor-pointer transition-all hover:bg-stone-50"
               >
-                <ImageIcon className="h-6 w-6 text-stone-300" />
-                <span className="text-[10px] text-stone-500 font-medium mt-1">Adicionar</span>
+                <ImageIcon className="h-6 w-6 text-stone-600" />
+                <span className="text-[10px] text-stone-600 font-black mt-1 uppercase tracking-wider">Adicionar</span>
               </Label>
             </div>
           )}
@@ -209,10 +209,10 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
           ) : (
             <Label
               htmlFor="audio-upload"
-              className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-100 p-4 bg-white cursor-pointer transition-all hover:bg-stone-50"
+              className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-500 p-4 bg-white cursor-pointer transition-all hover:bg-stone-50"
             >
-              <Music className="h-6 w-6 text-stone-300" />
-              <span className="text-xs text-stone-500 font-medium">Adicionar Áudio</span>
+              <Music className="h-6 w-6 text-stone-600" />
+              <span className="text-xs text-stone-600 font-black uppercase tracking-wider">Adicionar Áudio</span>
             </Label>
           )}
         </div>
@@ -238,8 +238,8 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
                   <Button 
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal border-stone-200",
-                      !expirationDate && "text-stone-400"
+                      "w-full justify-start text-left font-bold border-stone-600",
+                      !expirationDate && "text-stone-500"
                     )}
                   />
                 }
