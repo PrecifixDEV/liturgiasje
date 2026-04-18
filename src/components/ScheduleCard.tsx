@@ -148,23 +148,23 @@ export function ScheduleCard({
                       key={slot.id} 
                       id={`slot-${slot.id}`}
                       className={cn(
-                        "flex items-center justify-between p-3 rounded-2xl border border-stone-100/10 transition-all",
+                        "flex items-center justify-between py-1.5 px-3 rounded-xl border border-stone-100/10 transition-all",
                         isDatePast && slot.isSwapRequested ? "bg-red-50 border-l-4 border-l-red-400" : 
-                        slot.isConfirmed && slot.isMine ? "bg-green-50 border-l-4 border-l-green-600" : "bg-stone-50/40"
+                        slot.isConfirmed && slot.isMine ? "bg-green-50" : "bg-stone-50/40"
                       )}
                     >
                     <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-3">
-                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[11px] font-black border transition-all ${
+                          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-black border transition-all ${
                             isDatePast && slot.isSwapRequested
                               ? "bg-red-100 text-red-700 border-red-200"
                               : slot.isSwapRequested 
                                 ? "bg-amber-100 text-amber-700 border-amber-200 animate-pulse" 
                                 : slot.isConfirmed
-                                  ? "bg-green-100 text-green-700 border-green-200"
-                                  : "bg-stone-50 text-stone-600 border-stone-100"
+                                  ? "bg-green-100 text-green-700 border-green-600"
+                                  : "bg-stone-50 text-stone-600 border-stone-400"
                           }`}>
-                            {isDatePast && slot.isSwapRequested ? <X className="h-4 w-4" /> : slot.isSwapRequested ? <RefreshCw className="h-4 w-4" /> : slot.role}
+                            {isDatePast && slot.isSwapRequested ? <X className="h-3.5 w-3.5" /> : slot.isSwapRequested ? <RefreshCw className="h-3.5 w-3.5" /> : slot.role}
                           </div>
                           
                           <div className="flex items-center gap-2 min-w-0">
@@ -172,7 +172,7 @@ export function ScheduleCard({
                               {slot.readerName || "---"}
                             </span>
                             {slot.avatarUrl && (
-                              <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm ml-1">
+                              <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm ml-1">
                                 <img src={slot.avatarUrl} alt={slot.readerName} className="h-full w-full object-cover" />
                               </div>
                             )}
@@ -187,7 +187,7 @@ export function ScheduleCard({
                         <div className="flex items-center gap-2 shrink-0">
                           {/* Botão Confirmar/Trocar/Assumir (Apenas se NÃO for passado) */}
                         
-                        {!isDatePast && slot.isMine && !slot.isSwapRequested && (
+                        {isPublished && !isDatePast && slot.isMine && !slot.isSwapRequested && (
                           <div className="flex items-center gap-1.5">
                             <Button
                               variant="ghost"
@@ -210,7 +210,7 @@ export function ScheduleCard({
                           </div>
                         )}
 
-                        {!isDatePast && slot.isSwapRequested && !slot.isMine && (
+                        {isPublished && !isDatePast && slot.isSwapRequested && !slot.isMine && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -222,7 +222,7 @@ export function ScheduleCard({
                           </Button>
                         )}
 
-                        {slot.isMine && slot.isSwapRequested && (
+                        {isPublished && slot.isMine && slot.isSwapRequested && (
                           <div className="flex items-center gap-1.5">
                             <Badge 
                               variant="outline" 

@@ -237,7 +237,7 @@ export const scheduleService = {
         const targetUserIds = [...new Set((membersList || []).map(m => m.claimed_by).filter(id => !!id))]
 
         if (targetUserIds.length > 0) {
-          const monthName = format(parseISO(masses[0].date), 'MMMM "de" yyyy', { locale: ptBR })
+          const monthName = format(parseISO(masses[0].date), 'MMMM', { locale: ptBR })
           
           fetch('/api/push/send', {
             method: 'POST',

@@ -20,6 +20,7 @@ import { scheduleService } from "@/services/scheduleService"
 import { userService } from "@/services/userService"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
+import { APP_VERSION } from "@/constants/version"
 import {
   Sheet,
   SheetContent,
@@ -878,7 +879,7 @@ export default function Home() {
           {/* Versão do App */}
           <div className="mt-12 mb-8 flex justify-center">
             <span className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">
-              Versão 1.12
+              Versão {APP_VERSION}
             </span>
           </div>
  

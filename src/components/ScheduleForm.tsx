@@ -282,11 +282,13 @@ export function ScheduleForm({ currentMonth, onSuccess, onClose, initialData }: 
     try {
       // Salva cada sessão sequencialmente
       for (const sess of sessions) {
+        const actualMonthRef = format(new Date(date + 'T00:00:00'), "yyyy-MM")
+        
         const massData = {
           date,
           time: `${sess.time}:00`,
           special_description: sess.description,
-          month_reference: monthRef
+          month_reference: actualMonthRef
         }
         
         const slotsData = sess.slots.map(s => ({
