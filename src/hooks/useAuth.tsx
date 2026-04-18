@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase"
-import { User } from "@supabase/supabase-js"
+import { User, AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { userService, UserProfile } from "@/services/userService"
 import { memberService } from "@/services/memberService"
 
@@ -33,7 +33,7 @@ export function useAuth() {
 
   useEffect(() => {
     // 1. Verificar usuário atual ao montar (Usando getUser para segurança)
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
       setUser(user)
       if (user) {
         fetchProfile(user.id)
@@ -44,7 +44,7 @@ export function useAuth() {
 
     // 2. Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (_event: AuthChangeEvent, session: Session | null) => {
         const currentUser = session?.user ?? null
         setUser(currentUser)
         if (currentUser) {
