@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, LayoutDashboard, Users, UserCircle } from "lucide-react"
+import { LogOut, User, LayoutDashboard, Users, UserCircle, Download } from "lucide-react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 
 interface HeaderProps {
@@ -24,6 +25,42 @@ interface HeaderProps {
 }
 
 export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    // Verificar se o prompt de instalação já está disponível
+    if (typeof window !== 'undefined' && window.deferredPrompt) {
+      setIsInstallable(true);
+    }
+
+    const handleInstallable = () => setIsInstallable(true);
+    const handleInstalled = () => setIsInstallable(false);
+
+    window.addEventListener('pwa-installable', handleInstallable);
+    window.addEventListener('pwa-installed', handleInstalled);
+
+    return () => {
+      window.removeEventListener('pwa-installable', handleInstallable);
+      window.removeEventListener('pwa-installed', handleInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    const promptEvent = window.deferredPrompt;
+    if (!promptEvent) return;
+
+    // Mostrar o prompt nativo
+    promptEvent.prompt();
+    
+    // Esperar pela escolha do usuário
+    const { outcome } = await promptEvent.userChoice;
+    console.log(`PWA: Usuário escolheu ${outcome}`);
+    
+    // Limpar o prompt
+    window.deferredPrompt = null;
+    setIsInstallable(false);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container relative flex h-20 items-center justify-between px-4 max-w-md mx-auto">
@@ -52,6 +89,19 @@ export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
             </span>
           </div>
         </Link>
+        
+        {/* Botão de Instalação (PWA) */}
+        {isInstallable && (
+          <div className="flex-1 flex justify-center ml-2 mr-12">
+            <button
+              onClick={handleInstallClick}
+              className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-[9px] uppercase tracking-widest px-3 py-2 rounded-xl border border-stone-200 shadow-sm transition-all active:scale-95 animate-in fade-in zoom-in duration-500"
+            >
+              <Download className="h-3 w-3" />
+              Baixar App
+            </button>
+          </div>
+        )}
 
         {/* Perfil/Login à Direita */}
         <div className="absolute right-4 flex items-center gap-4">

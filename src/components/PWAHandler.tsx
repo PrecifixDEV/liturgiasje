@@ -1,7 +1,11 @@
-"use client"
-
 import { useEffect } from "react"
 import { toast } from "sonner"
+
+declare global {
+  interface Window {
+    deferredPrompt: any;
+  }
+}
 
 export function PWAHandler() {
   useEffect(() => {
@@ -140,6 +144,31 @@ export function PWAHandler() {
         registerServiceWorker()
       }
     }
+
+    // 2. Lógica de Instalação Manual
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Previne o mini-infobar do Chrome no mobile
+      e.preventDefault();
+      // Armazena o evento para disparar o prompt depois
+      window.deferredPrompt = e;
+      // Notifica o app que a instalação está disponível
+      window.dispatchEvent(new CustomEvent('pwa-installable'));
+    };
+
+    const handleAppInstalled = () => {
+      // Limpar o prompt após instalação
+      window.deferredPrompt = null;
+      window.dispatchEvent(new CustomEvent('pwa-installed'));
+      console.log('PWA: Aplicativo instalado com sucesso!');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, [])
 
   return null // Este componente não renderiza nada visualmente
