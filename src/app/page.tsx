@@ -102,7 +102,7 @@ export default function Home() {
   const loadSchedule = async () => {
     try {
       setIsLoadingSchedule(true)
-      const isAdmin = headerUser?.role === "admin"
+      const isAdmin = profile?.role === "admin"
       const data = await scheduleService.listForMonth(currentDate, isAdmin)
       setSchedule(data)
     } finally {
@@ -141,8 +141,9 @@ export default function Home() {
   }, [user?.id])
 
   useEffect(() => {
+    if (loading) return
     loadSchedule()
-  }, [currentDate])
+  }, [currentDate, profile?.role, loading])
 
   // Atualização em Tempo Real (Realtime)
   useEffect(() => {
@@ -179,7 +180,7 @@ export default function Home() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user?.id, currentDate])
+  }, [user?.id, currentDate, profile?.role])
 
   const headerUser = profile ? {
     full_name: profile.full_name,
@@ -299,7 +300,7 @@ export default function Home() {
                     createdAt={ann.created_at}
                     authorId={ann.created_by}
                     currentUserId={user?.id}
-                    isAdmin={headerUser?.role === "admin"}
+                    isAdmin={profile?.role === "admin"}
                     isLoggedIn={!!user}
                     onRead={async (id) => {
                       if (!user) {
@@ -356,7 +357,7 @@ export default function Home() {
               )}
             </div>
 
-            {headerUser?.role === "admin" && (
+            {profile?.role === "admin" && (
               <div className="pt-2">
                 <Sheet open={isSheetOpen} onOpenChange={(open) => {
                   setIsSheetOpen(open);
@@ -365,7 +366,7 @@ export default function Home() {
                   <SheetTrigger render={
                       <Button 
                         variant="outline" 
-                        className="w-full h-14 border-dashed border-stone-500 text-stone-600 hover:text-stone-800 hover:border-stone-600 hover:bg-stone-50 rounded-2xl group transition-all font-bold"
+                        className="w-full h-14 border-dashed border-stone-600 text-stone-600 hover:text-stone-800 hover:border-stone-800 hover:bg-stone-50 rounded-2xl group transition-all font-bold"
                         onClick={() => setAnnouncementToEdit(null)}
                       >
                         <Plus className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
@@ -487,7 +488,7 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-between w-full bg-white rounded-full border border-stone-400 px-2 py-1.5 shadow-sm transition-colors hover:border-stone-500">
+            <div className="flex items-center justify-between w-full bg-white rounded-full border border-stone-400 px-2 py-1.5 shadow-sm transition-colors hover:border-stone-600">
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -577,7 +578,7 @@ export default function Home() {
                           isMine: s.reader_id ? s.reader_id === user?.id : (member?.id && (s.member_id === member.id))
                         }))
                       }))}
-                      isAdmin={headerUser?.role === "admin"}
+                      isAdmin={profile?.role === "admin"}
                       isPublished={day.items.every((i: any) => i.is_published)}
                       onEdit={() => {
                         setScheduleToEdit(day.items) // Passa o array de missas do dia
@@ -663,7 +664,7 @@ export default function Home() {
               )}
             </div>
             
-            {headerUser?.role === "admin" && (
+            {profile?.role === "admin" && (
               <div className="pt-2">
                 <Sheet open={isScheduleSheetOpen} onOpenChange={setIsScheduleSheetOpen}>
                   <SheetTrigger render={
@@ -882,7 +883,7 @@ export default function Home() {
           </div>
  
           {/* Botão Flutuante de Publicação (Apenas para Admin se houver rascunhos) */}
-          {headerUser?.role === "admin" && schedule.some(mass => !mass.is_published) && (
+          {profile?.role === "admin" && schedule.some(mass => !mass.is_published) && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md">
               <Button 
                 className="w-full h-14 bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl shadow-xl border-t border-white/20 animate-in fade-in slide-in-from-bottom-8 duration-500"

@@ -131,7 +131,7 @@ export function ScheduleCard({
       {isExpanded && (
         <CardContent className="p-0 animate-in fade-in slide-in-from-top-1 duration-200">
         {items.map((item, itemIndex) => (
-          <div key={item.id} className={cn("flex flex-col", itemIndex > 0 && "border-t-4 border-stone-100")}>
+          <div key={item.id} className={cn("flex flex-col", itemIndex > 0 && "border-t-4 border-stone-200")}>
             {/* Sub-header do Horário */}
             <div className="flex items-center bg-stone-50/30 px-4 py-2 border-b border-stone-50 gap-3">
               <div className="flex items-center gap-2 text-stone-600">

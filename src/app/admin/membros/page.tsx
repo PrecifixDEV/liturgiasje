@@ -176,10 +176,10 @@ export default function AdminMembersPage() {
                               Admin
                             </Badge>
                           )}
-                          {member.is_claimed && !member.claimed_user?.role && (
-                            <span className="text-[8px] font-bold uppercase tracking-wider bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 shrink-0">
-                              No App
-                            </span>
+                          {member.is_claimed && member.claimed_user?.role !== 'admin' && (
+                            <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100 font-bold text-[8px] tracking-wider px-1.5 py-0 rounded shrink-0 uppercase">
+                              Leitor
+                            </Badge>
                           )}
                         </div>
                         <p className="text-xs text-stone-500 truncate">{member.whatsapp || "Sem WhatsApp"}</p>

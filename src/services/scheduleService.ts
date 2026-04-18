@@ -179,7 +179,7 @@ export const scheduleService = {
     // 1. Criar a missa
     const { data: mass, error: massError } = await supabase
       .from('masses')
-      .insert(massData)
+      .insert({ ...massData, is_published: false })
       .select()
       .single()
 
@@ -255,7 +255,7 @@ export const scheduleService = {
     // 1. Atualizar a missa
     const { error: massError } = await supabase
       .from('masses')
-      .update(massData)
+      .update({ ...massData, is_published: false })
       .eq('id', massId)
 
     if (massError) throw massError
