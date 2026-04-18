@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase"
-import { startOfMonth, endOfMonth, format } from "date-fns"
+import { startOfMonth, endOfMonth, format, parseISO } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
 export const scheduleService = {
   async listForMonth(date: Date, isAdmin: boolean = false) {
@@ -236,11 +237,13 @@ export const scheduleService = {
         const targetUserIds = [...new Set((membersList || []).map(m => m.claimed_by).filter(id => !!id))]
 
         if (targetUserIds.length > 0) {
+          const monthName = format(parseISO(masses[0].date), 'MMMM "de" yyyy', { locale: ptBR })
+          
           fetch('/api/push/send', {
             method: 'POST',
             body: JSON.stringify({
-              title: 'Nova Escala Publicada! 📅',
-              body: `A escala de ${masses[0].date.substring(0, 7)} foi publicada. Confira seus horários!`,
+              title: 'Você foi escalado! 📅',
+              body: `Confira seus horários de leitura na nova escala de ${monthName}.`,
               url: '/',
               targetUserIds
             }),
