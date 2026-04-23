@@ -5,6 +5,7 @@ import { Loader2, ArrowLeft } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 export default function FolhetoPage() {
   const { profile, loading } = useAuth()
@@ -22,19 +23,42 @@ export default function FolhetoPage() {
 
   return (
     <div className="flex flex-col h-screen bg-stone-50 overflow-hidden">
-      {/* Cabeçalho de Navegação */}
-      <header className="flex items-center justify-between px-4 h-16 bg-white border-b border-stone-200 shrink-0">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => router.push("/")}
-          className="rounded-full gap-2 text-stone-600 hover:text-stone-900"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          <span className="font-bold text-xs uppercase tracking-tight">Voltar</span>
-        </Button>
-        <h1 className="text-sm font-black text-stone-800 uppercase tracking-tighter">Folheto da Missa</h1>
-        <div className="w-20" /> {/* Espaçador para centralizar o título */}
+      {/* Cabeçalho Premium Centralizado */}
+      <header className="flex items-center px-4 h-20 bg-[#FDFCF0] border-b border-stone-200 shrink-0 relative">
+        {/* Botão Voltar Absoluto à Esquerda */}
+        <div className="absolute left-2 z-10">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => router.push("/")}
+            className="rounded-full text-stone-600 hover:text-stone-900 hover:bg-stone-200/20"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+        </div>
+
+        {/* Logo e Título Centralizados */}
+        <div className="flex-1 flex items-center justify-center gap-3">
+          <div className="relative h-12 w-12 shrink-0">
+            <Image 
+              src="/favicon.png" 
+              alt="Logo SJE" 
+              fill
+              className="object-contain rounded-xl shadow-sm"
+            />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-black text-stone-800 leading-none tracking-tight">
+              Liturgia SJE
+            </h1>
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-1">
+              Painel do Leitor
+            </span>
+          </div>
+        </div>
+        
+        {/* Espaçador invisível à direita para manter a centralização perfeita */}
+        <div className="w-10" />
       </header>
 
       <main className="flex-1 relative w-full h-full overflow-hidden bg-stone-100">
@@ -49,7 +73,6 @@ export default function FolhetoPage() {
             <p className="mt-6 text-stone-900 font-black text-[10px] uppercase tracking-[0.2em] animate-pulse">
               Carregando Folheto...
             </p>
-            <p className="mt-2 text-stone-400 text-[10px] font-medium">Isso pode levar alguns segundos</p>
           </div>
         )}
         
