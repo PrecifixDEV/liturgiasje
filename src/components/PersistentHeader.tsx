@@ -9,7 +9,7 @@ export function PersistentHeader() {
   const pathname = usePathname()
 
   // Lista de páginas onde o Header NÃO deve aparecer
-  const hideHeaderOn = ["/bemvindo", "/auth/callback"]
+  const hideHeaderOn = ["/bemvindo", "/auth/callback", "/folheto"]
   
   if (hideHeaderOn.includes(pathname)) {
     return null
