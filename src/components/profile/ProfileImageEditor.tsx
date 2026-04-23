@@ -71,7 +71,7 @@ export function ProfileImageEditor() {
           className="relative cursor-pointer transition-transform hover:scale-105 active:scale-95"
         >
           <Avatar className="h-32 w-32 border-4 border-white shadow-xl ring-2 ring-stone-100">
-            <AvatarImage src={profile?.avatar_url} className="object-cover" />
+            <AvatarImage src={profile?.avatar_url ?? undefined} className="object-cover" />
             <AvatarFallback className="bg-stone-50">
               <UserCircle className="h-16 w-16 text-stone-300" />
             </AvatarFallback>

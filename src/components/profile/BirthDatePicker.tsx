@@ -52,7 +52,11 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
       {/* Dia */}
       <Select 
         value={day} 
-        onValueChange={(v) => { setDay(v); handleUpdate(v, month, year); }}
+        onValueChange={(v) => { 
+          const val = v || "";
+          setDay(val); 
+          handleUpdate(val, month, year); 
+        }}
       >
         <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Dia" />
@@ -67,7 +71,11 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
       {/* Mês */}
       <Select 
         value={month} 
-        onValueChange={(v) => { setMonth(v); handleUpdate(day, v, year); }}
+        onValueChange={(v) => { 
+          const val = v || "";
+          setMonth(val); 
+          handleUpdate(day, val, year); 
+        }}
       >
         <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Mês" />
@@ -82,7 +90,11 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
       {/* Ano */}
       <Select 
         value={year} 
-        onValueChange={(v) => { setYear(v); handleUpdate(day, month, v); }}
+        onValueChange={(v) => { 
+          const val = v || "";
+          setYear(val); 
+          handleUpdate(day, month, val); 
+        }}
       >
         <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Ano" />
