@@ -1,7 +1,7 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from "react"
-import { createClient } from "@/lib/supabase"
+import { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { supabase } from "@/lib/supabase"
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js"
 import { userService, UserProfile } from "@/services/userService"
 import { memberService } from "@/services/memberService"
@@ -20,7 +20,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [member, setMember] = useState<any | null>(null)
@@ -71,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
 
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [])
 
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
