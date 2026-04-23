@@ -1,29 +1,61 @@
 "use client"
 
 import { useAuth } from "@/hooks/useAuth"
-import { Loader2 } from "lucide-react"
-import { useState } from "react"
+import { Loader2, ArrowLeft } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 
 export default function FolhetoPage() {
   const { profile, loading } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+
+  // Fallback para evitar carregamento infinito
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 10000) // 10 segundos de limite
+
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <div className="flex flex-col h-screen bg-stone-50 overflow-hidden">
-      
+      {/* Cabeçalho de Navegação */}
+      <header className="flex items-center justify-between px-4 h-16 bg-white border-b border-stone-200 shrink-0">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => router.push("/")}
+          className="rounded-full gap-2 text-stone-600 hover:text-stone-900"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span className="font-bold text-xs uppercase tracking-tight">Voltar</span>
+        </Button>
+        <h1 className="text-sm font-black text-stone-800 uppercase tracking-tighter">Folheto da Missa</h1>
+        <div className="w-20" /> {/* Espaçador para centralizar o título */}
+      </header>
+
       <main className="flex-1 relative w-full h-full overflow-hidden bg-stone-100">
         {isLoading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-50/80 backdrop-blur-sm z-10">
-            <Loader2 className="h-10 w-10 animate-spin text-stone-400 mb-4" />
-            <p className="text-stone-500 font-bold text-sm uppercase tracking-widest animate-pulse">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-10">
+            <div className="relative">
+              <Loader2 className="h-12 w-12 animate-spin text-stone-800" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-2 w-2 bg-stone-800 rounded-full animate-ping" />
+              </div>
+            </div>
+            <p className="mt-6 text-stone-900 font-black text-[10px] uppercase tracking-[0.2em] animate-pulse">
               Carregando Folheto...
             </p>
+            <p className="mt-2 text-stone-400 text-[10px] font-medium">Isso pode levar alguns segundos</p>
           </div>
         )}
         
         <iframe 
           src={`https://docs.google.com/gview?url=https://www.arqrio.com.br/app/painel/amissa/amissa.pdf&embedded=true`}
-          className="w-full h-full border-none shadow-inner"
+          className="w-full h-full border-none"
           onLoad={() => setIsLoading(false)}
           title="Folheto da Missa"
         />
