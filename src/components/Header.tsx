@@ -100,9 +100,9 @@ export function Header({
             }}
           >
             <img 
-              src="/favicon.png" 
+              src="/Logo-Liturgia-SJE.png" 
               alt="Logo Liturgia SJE" 
-              className={`${centerLogo ? 'h-10 w-10' : 'h-14 w-auto'} drop-shadow-sm group-hover:drop-shadow-md transition-all rounded-xl`}
+              className={`${centerLogo ? 'h-10 w-auto' : 'h-14 w-auto'} drop-shadow-sm group-hover:drop-shadow-md transition-all`}
             />
             <div className={`flex flex-col ${centerLogo ? 'items-start' : ''}`}>
               <h1 className={`${centerLogo ? 'text-lg' : 'text-xl'} font-black tracking-tight text-stone-800 leading-none`}>
