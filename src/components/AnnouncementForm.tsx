@@ -118,8 +118,17 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream)
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        } 
+      })
+      
+      // Tentar usar um bitrate maior se o navegador suportar
+      const options = { audioBitsPerSecond: 128000 }
+      const mediaRecorder = new MediaRecorder(stream, options)
       mediaRecorderRef.current = mediaRecorder
       chunksRef.current = []
 
