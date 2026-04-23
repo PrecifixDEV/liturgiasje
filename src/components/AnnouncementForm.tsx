@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { CalendarIcon, Loader2, Image as ImageIcon, Music, X } from "lucide-react"
+import { CalendarIcon, Loader2, Image as ImageIcon, Music, X, Mic, Square } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AnnouncementFormProps {
@@ -51,6 +51,11 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
   const [existingAudios, setExistingAudios] = useState<string[]>(initialData?.audio_urls || (initialData?.audio_url ? [initialData.audio_url] : []))
   
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const canAddMoreImages = (existingImages.length + imageFiles.length) < 3
   const canAddMoreAudios = (existingAudios.length + audioFiles.length) < 3
@@ -110,6 +115,65 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
   const removeNewAudio = (index: number) => {
     setAudioFiles(prev => prev.filter((_, i) => i !== index))
   }
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      chunksRef.current = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data)
+      }
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType })
+        const fileExt = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm'
+        const file = new File([audioBlob], `gravacao-${Date.now()}.${fileExt}`, { type: mediaRecorder.mimeType })
+        
+        setAudioFiles(prev => {
+          const remainingSlots = 3 - (existingAudios.length + prev.length)
+          if (remainingSlots > 0) return [...prev, file]
+          return prev
+        })
+
+        // Parar todos os tracks do stream
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      mediaRecorder.start()
+      setIsRecording(true)
+      setRecordingTime(0)
+      
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+
+    } catch (err) {
+      console.error("Erro ao acessar microfone:", err)
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [])
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 pt-4 text-stone-900">
@@ -229,24 +293,47 @@ export function AnnouncementForm({ initialData, onSave, onClose }: AnnouncementF
             </div>
           ))}
 
-          {/* Botão de Adicionar Áudio */}
+          {/* Botões de Ação de Áudio */}
           {canAddMoreAudios && (
-            <div className="relative">
-              <input
-                type="file"
-                id="audio-upload"
-                accept="audio/*"
-                multiple
-                className="hidden"
-                onChange={handleAudioChange}
-              />
-              <Label
-                htmlFor="audio-upload"
-                className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-500 p-4 bg-white cursor-pointer transition-all hover:bg-stone-50"
+            <div className="flex gap-2">
+              {/* Botão de Gravar */}
+              <button
+                type="button"
+                onClick={isRecording ? stopRecording : startRecording}
+                className={cn(
+                  "flex items-center justify-center w-14 h-14 rounded-lg border-2 border-stone-800 transition-all active:scale-95",
+                  isRecording ? "bg-red-50 border-red-500" : "bg-white"
+                )}
+                title={isRecording ? "Parar Gravação" : "Gravar Áudio"}
               >
-                <Music className="h-6 w-6 text-stone-600" />
-                <span className="text-xs text-stone-600 font-black uppercase tracking-wider">Adicionar Áudio</span>
-              </Label>
+                {isRecording ? (
+                  <div className="flex flex-col items-center">
+                    <Square className="h-5 w-5 text-red-500 fill-red-500" />
+                    <span className="text-[10px] font-black text-red-500 mt-0.5">{formatTime(recordingTime)}</span>
+                  </div>
+                ) : (
+                  <Mic className="h-6 w-6 text-red-500" />
+                )}
+              </button>
+
+              {/* Botão de Adicionar Arquivo */}
+              <div className="flex-1 relative">
+                <input
+                  type="file"
+                  id="audio-upload"
+                  accept="audio/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleAudioChange}
+                />
+                <Label
+                  htmlFor="audio-upload"
+                  className="flex items-center justify-center gap-2 h-full rounded-lg border-2 border-dashed border-stone-500 bg-white cursor-pointer transition-all hover:bg-stone-50"
+                >
+                  <Music className="h-5 w-5 text-stone-600" />
+                  <span className="text-[10px] text-stone-600 font-black uppercase tracking-wider">Adicionar Áudio</span>
+                </Label>
+              </div>
             </div>
           )}
         </div>
