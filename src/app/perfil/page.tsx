@@ -10,6 +10,7 @@ import { Loader2, ArrowLeft, Save, User as UserIcon, Calendar, MessageSquare, Cl
 import { toast } from "sonner"
 import { maskPhone, cn } from "@/lib/utils"
 import { ProfileImageEditor } from "@/components/profile/ProfileImageEditor"
+import { BirthDatePicker } from "@/components/profile/BirthDatePicker"
 import { Badge } from "@/components/ui/badge"
 
 const COMMON_TIMES = ["07:00", "09:00", "11:00", "19:00"]
@@ -152,11 +153,9 @@ export default function ProfilePage() {
                     <Calendar className="h-3 w-3" />
                     <label className="text-[10px] font-bold uppercase tracking-widest">Data de Nascimento</label>
                   </div>
-                  <Input 
-                    type="date"
+                  <BirthDatePicker 
                     value={formData.birth_date}
-                    onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                    className="rounded-2xl border-stone-100 focus-visible:ring-stone-200 h-12 text-stone-800 font-medium"
+                    onChange={(val) => setFormData({ ...formData, birth_date: val })}
                   />
                 </div>
 
