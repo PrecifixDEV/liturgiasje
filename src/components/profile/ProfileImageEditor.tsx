@@ -9,16 +9,12 @@ import { ImageCropperModal } from "./ImageCropperModal"
 import { Camera, UserCircle, Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
-import { MediaPickerDrawer } from "./MediaPickerDrawer"
-
 export function ProfileImageEditor() {
   const { user, profile, refreshProfile } = useAuth()
   const [isCropperOpen, setIsCropperOpen] = useState(false)
-  const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -27,7 +23,6 @@ export function ProfileImageEditor() {
       reader.onload = () => {
         setSelectedImage(reader.result as string)
         setIsCropperOpen(true)
-        setIsPickerOpen(false)
       }
       reader.readAsDataURL(file)
     }
@@ -57,7 +52,6 @@ export function ProfileImageEditor() {
     }
 
     setIsUpdating(true)
-    setIsPickerOpen(false)
     try {
       await userService.updateProfile(user.id, { avatar_url: googleAvatarUrl })
       toast.success("Foto importada do Google!")
@@ -69,26 +63,11 @@ export function ProfileImageEditor() {
     }
   }
 
-  const handleRemovePhoto = async () => {
-    if (!user) return
-    setIsUpdating(true)
-    setIsPickerOpen(false)
-    try {
-      await userService.updateProfile(user.id, { avatar_url: null })
-      toast.success("Foto removida.")
-      await refreshProfile()
-    } catch (error) {
-      toast.error("Erro ao remover foto.")
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="relative group">
         <div 
-          onClick={() => setIsPickerOpen(true)}
+          onClick={() => fileInputRef.current?.click()}
           className="relative cursor-pointer transition-transform hover:scale-105 active:scale-95"
         >
           <Avatar className="h-32 w-32 border-4 border-white shadow-xl ring-2 ring-stone-100">
@@ -98,8 +77,8 @@ export function ProfileImageEditor() {
             </AvatarFallback>
           </Avatar>
           
-          <div className="absolute -bottom-1 -right-1 h-10 w-10 bg-stone-800 rounded-full flex items-center justify-center border-4 border-white shadow-lg text-white">
-            <Camera className="h-5 w-5" />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+            <Camera className="h-8 w-8 text-white" />
           </div>
 
           {isUpdating && (
@@ -109,7 +88,6 @@ export function ProfileImageEditor() {
           )}
         </div>
         
-        {/* Inputs Ocultos */}
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -117,25 +95,20 @@ export function ProfileImageEditor() {
           accept="image/*" 
           onChange={handleFileChange} 
         />
-        <input 
-          type="file" 
-          ref={cameraInputRef} 
-          className="hidden" 
-          accept="image/*" 
-          capture="user"
-          onChange={handleFileChange} 
-        />
       </div>
 
-      <MediaPickerDrawer 
-        isOpen={isPickerOpen}
-        onClose={() => setIsPickerOpen(false)}
-        onSelectCamera={() => cameraInputRef.current?.click()}
-        onSelectGallery={() => fileInputRef.current?.click()}
-        onSelectGoogle={handlePullFromGoogle}
-        onRemovePhoto={handleRemovePhoto}
-        hasPhoto={!!profile?.avatar_url}
-      />
+      <div className="flex flex-col gap-2 w-full max-w-[200px]">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handlePullFromGoogle}
+          disabled={isUpdating}
+          className="rounded-2xl h-10 border-stone-200 text-stone-600 font-bold text-xs gap-2 hover:bg-stone-50"
+        >
+          <Sparkles className="h-3 w-3 text-amber-500" />
+          Usar foto do Google
+        </Button>
+      </div>
 
       {selectedImage && (
         <ImageCropperModal
@@ -151,4 +124,3 @@ export function ProfileImageEditor() {
     </div>
   )
 }
-
