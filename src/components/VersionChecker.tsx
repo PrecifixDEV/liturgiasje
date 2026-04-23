@@ -121,7 +121,7 @@ export function VersionChecker() {
 
         <div className="w-full pt-4">
           <Button 
-            onClick={handleUpdate}
+            onClick={() => handleUpdate()}
             variant="default" 
             className="w-full h-14 bg-white text-[#322113] hover:bg-stone-100 font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-black/20 group transition-all"
           >
