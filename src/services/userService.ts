@@ -4,7 +4,7 @@ export interface UserProfile {
   id: string
   email: string
   full_name: string
-  avatar_url?: string
+  avatar_url?: string | null
   role: 'admin' | 'reader'
   whatsapp?: string
   birth_date?: string
