@@ -17,7 +17,7 @@ import Link from "next/link"
 interface HeaderProps {
   user?: {
     full_name?: string
-    avatar_url?: string
+    avatar_url?: string | null
     role?: "admin" | "reader"
   } | null
   onSignIn?: () => void

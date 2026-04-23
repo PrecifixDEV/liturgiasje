@@ -20,7 +20,7 @@ export function PersistentHeader() {
 
   const headerUser = profile ? {
     full_name: profile.full_name,
-    avatar_url: profile.avatar_url,
+    avatar_url: profile.avatar_url ?? undefined,
     role: profile.role
   } : null
 
