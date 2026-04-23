@@ -13,48 +13,85 @@ export function VersionChecker() {
   useEffect(() => {
     async function checkVersion() {
       try {
+        // Busca configurações do banco (bypass de cache implícito por ser chamada dinâmica)
         const { data, error } = await supabase
           .from("app_settings")
-          .select("value")
-          .eq("key", "min_version")
-          .single()
+          .select("key, value")
+          .in("key", ["min_version", "force_update_at"]);
 
-        if (error) throw error
+        if (error) throw error;
 
-        if (data && data.value !== APP_VERSION) {
-          setNeedsUpdate(true)
+        const settings = (data || []).reduce((acc, curr) => ({ 
+          ...acc, [curr.key]: curr.value 
+        }), {} as Record<string, string>);
+
+        const minVersion = settings.min_version;
+        const forceUpdateAt = settings.force_update_at;
+
+        // 1. Verificar se a versão atual é diferente da mínima exigida
+        if (minVersion && minVersion !== APP_VERSION) {
+          setNeedsUpdate(true);
+          return;
+        }
+
+        // 2. Verificar se existe uma data de atualização forçada
+        if (forceUpdateAt) {
+          const forceDate = new Date(forceUpdateAt).getTime();
+          const lastCheck = localStorage.getItem('last_force_update_check');
+          
+          // Se nunca checou ou se a data do banco é posterior ao último check bem sucedido
+          if (!lastCheck || new Date(lastCheck).getTime() < forceDate) {
+            console.log("Detectada data de atualização forçada:", forceUpdateAt);
+            
+            // Registra o check ANTES de atualizar para evitar loop infinito se algo falhar
+            localStorage.setItem('last_force_update_check', new Date().toISOString());
+            
+            // Só forçamos se o app já estiver aberto há algum tempo ou se for a primeira vez
+            handleUpdate(true); 
+          }
         }
       } catch (error: any) {
-        console.error("Erro ao verificar versão:", error.message || error)
+        console.error("Erro ao verificar versão:", error.message || error);
       } finally {
-        setIsChecking(false)
+        setIsChecking(false);
       }
     }
 
-    checkVersion()
+    checkVersion();
     
-    // Verificar a cada 30 minutos se o app for deixado aberto
-    const interval = setInterval(checkVersion, 30 * 60 * 1000)
-    return () => clearInterval(interval)
-  }, [])
+    const interval = setInterval(checkVersion, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const handleUpdate = async () => {
-    // Tenta desregistrar o service worker primeiro para garantir que o novo sw.js seja baixado
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (let registration of registrations) {
-        await registration.unregister();
+  const handleUpdate = async (silent = false) => {
+    try {
+      // 1. Desregistrar todos os Service Workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          await registration.unregister();
+        }
       }
-    }
-    
-    // Limpar caches se possível
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-    }
+      
+      // 2. Limpar todos os caches da API de Cache
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
 
-    // Recarregamento forçado do servidor
-    window.location.reload();
+      // 3. Forçar recarregamento ignorando cache do navegador (URL busting)
+      // Adicionar um parâmetro na URL garante que o navegador busque o index.html novo
+      const url = new URL(window.location.href);
+      url.searchParams.set('v', Date.now().toString());
+      
+      if (silent) {
+        window.location.replace(url.toString());
+      } else {
+        window.location.href = url.toString();
+      }
+    } catch (e) {
+      window.location.reload();
+    }
   }
 
   if (!needsUpdate) return null

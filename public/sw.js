@@ -37,18 +37,49 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 1. Não cachear o próprio Service Worker para garantir que atualizações sejam detectadas
-  if (event.request.url.includes('sw.js')) return;
+  const url = new URL(event.request.url);
 
-  // 2. Apenas cachear requisições GET e de mesma origem
+  // 1. Não cachear o próprio Service Worker para garantir que atualizações sejam detectadas
+  if (url.pathname === '/sw.js') return;
+
+  // 2. Apenas lidar com requisições GET
   if (event.request.method !== 'GET') return;
-  
+
+  // 3. Estratégia Network-First para navegações (HTML principal)
+  // Isso garante que se houver internet, ele sempre pega o HTML mais novo do servidor.
+  if (event.request.mode === 'navigate' || (url.origin === self.location.origin && url.pathname === '/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Opcionalmente atualizar o cache com a versão nova
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => {
+          // Se falhar a rede, tenta o cache
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // 4. Estratégia Stale-While-Revalidate para outros ativos (JS, CSS, Imagens)
+  // Serve do cache IMEDIATAMENTE, mas busca na rede por trás para atualizar o cache para a próxima vez.
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).then((fetchResponse) => {
-        return fetchResponse;
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const cacheCopy = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, cacheCopy));
+        }
+        return networkResponse;
       });
-    }).catch(() => {})
+
+      return cachedResponse || fetchPromise;
+    }).catch(() => {
+      // Fallback silencioso
+    })
   );
 });
 
