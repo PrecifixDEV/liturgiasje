@@ -135,7 +135,7 @@ export function Header({
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none">
                 <Avatar className="h-14 w-14 cursor-pointer border-2 border-stone-200 transition-colors hover:border-stone-300">
-                  <AvatarImage src={user?.avatar_url} />
+                  <AvatarImage src={user?.avatar_url ?? undefined} />
                   <AvatarFallback className="bg-stone-100 text-stone-600">
                     <UserCircle className="h-9 w-9" />
                   </AvatarFallback>
