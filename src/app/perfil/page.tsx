@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, ArrowLeft, Save, User as UserIcon, Calendar, MessageSquare, Clock } from "lucide-react"
 import { toast } from "sonner"
-import { Header } from "@/components/Header"
 import { maskPhone, cn } from "@/lib/utils"
 import { ProfileImageEditor } from "@/components/profile/ProfileImageEditor"
 import { Badge } from "@/components/ui/badge"
@@ -89,11 +88,6 @@ export default function ProfilePage() {
     }
   }
 
-  const headerUser = profile ? {
-    full_name: profile.full_name,
-    avatar_url: profile.avatar_url,
-    role: profile.role
-  } : null
 
   if (loading || !user) {
     return (
@@ -105,12 +99,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-50/30">
-      <Header 
-        user={headerUser} 
-        onSignIn={signInWithGoogle}
-        onSignOut={signOut}
-      />
-
+      
       <main className="flex-1 overflow-auto">
         <div className="container max-w-md mx-auto px-4 py-8 space-y-8 pb-20">
           

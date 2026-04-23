@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Header } from "@/components/Header"
 import { AnnouncementCard } from "@/components/AnnouncementCard"
 import { ScheduleCard } from "@/components/ScheduleCard"
 import { BirthdayCard } from "@/components/BirthdayCard"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, CalendarOff, CheckCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw, CalendarOff, CheckCircle, FileText } from "lucide-react"
 import { addMonths, format, subMonths } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import Link from "next/link"
 
 import { useAuth } from "@/hooks/useAuth"
 import { AnnouncementForm } from "@/components/AnnouncementForm"
@@ -183,19 +183,9 @@ export default function Home() {
     }
   }, [user?.id, currentDate, profile?.role])
 
-  const headerUser = profile ? {
-    full_name: profile.full_name,
-    avatar_url: profile.avatar_url,
-    role: profile.role
-  } : null
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-50/30">
-      <Header 
-        user={headerUser} 
-        onSignIn={signInWithGoogle}
-        onSignOut={signOut}
-      />
       
       <main className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto px-4 py-6 space-y-8 pb-20">
@@ -900,6 +890,14 @@ export default function Home() {
               </Button>
             </div>
           )}
+          {/* Botão Flutuante (FAB) para o Folheto */}
+          <Link 
+            href="/folheto"
+            className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#322113] text-white shadow-lg shadow-[#322113]/40 transition-all hover:scale-110 active:scale-95 animate-in fade-in zoom-in duration-500"
+            title="Folheto da Missa"
+          >
+            <FileText className="h-6 w-6" />
+          </Link>
         </div>
       </main>
     </div>

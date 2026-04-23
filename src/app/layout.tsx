@@ -7,6 +7,8 @@ import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
 import { PWAHandler } from "@/components/PWAHandler";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { VersionChecker } from "@/components/VersionChecker";
+import { AuthProvider } from "@/providers/AuthProvider";
+import { PersistentHeader } from "@/components/PersistentHeader";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,11 +45,14 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="h-full" suppressHydrationWarning>
       <body className={`${inter.className} min-h-full bg-background text-foreground antialiased`}>
-        <VersionChecker />
-        <PWAHandler />
-        {children}
-        <Toaster />
-        <GoogleOneTap />
+        <AuthProvider>
+          <PersistentHeader />
+          <VersionChecker />
+          <PWAHandler />
+          {children}
+          <Toaster />
+          <GoogleOneTap />
+        </AuthProvider>
         <Script 
           src="https://accounts.google.com/gsi/client" 
           strategy="afterInteractive"

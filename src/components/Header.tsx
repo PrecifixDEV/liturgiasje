@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, LayoutDashboard, Users, UserCircle, Download } from "lucide-react"
+import { LogOut, User, LayoutDashboard, Users, UserCircle, Download, ArrowLeft } from "lucide-react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 
@@ -22,9 +22,17 @@ interface HeaderProps {
   } | null
   onSignIn?: () => void
   onSignOut?: () => void
+  showBackButton?: boolean
+  centerLogo?: boolean
 }
 
-export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
+export function Header({ 
+  user, 
+  onSignIn, 
+  onSignOut, 
+  showBackButton = false,
+  centerLogo = false 
+}: HeaderProps) {
   const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
@@ -64,34 +72,49 @@ export function Header({ user, onSignIn, onSignOut }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container relative flex h-20 items-center justify-between px-4 max-w-md mx-auto">
-        {/* Logo e Título à Esquerda */}
-        <Link 
-          href="/" 
-          className="flex items-center gap-3 transition-transform active:scale-95 group"
-          onClick={(e) => {
-            if (window.location.pathname === '/') {
-              e.preventDefault();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}
-        >
-          <img 
-            src="/Logo-Liturgia-SJE.png" 
-            alt="Logo Liturgia SJE" 
-            className="h-14 w-auto drop-shadow-sm group-hover:drop-shadow-md transition-all"
-          />
-          <div className="flex flex-col">
-            <h1 className="text-xl font-black tracking-tight text-stone-800 leading-none">
-              Liturgia SJE
-            </h1>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
-              Painel do Leitor
-            </span>
-          </div>
-        </Link>
+        {/* Botão Voltar (Opcional) */}
+        {showBackButton && (
+          <button
+            onClick={() => window.history.back()}
+            className="absolute left-4 z-10 p-2 rounded-full hover:bg-stone-100 transition-colors active:scale-95"
+            aria-label="Voltar"
+          >
+            <ArrowLeft className="h-6 w-6 text-stone-600" />
+          </button>
+        )}
+
+        {/* Logo e Título (Pode ser centralizado) */}
+        <div className={`flex items-center gap-3 transition-transform ${centerLogo ? 'mx-auto' : ''}`}>
+          <Link 
+            href="/" 
+            className="flex items-center gap-3 transition-transform active:scale-95 group"
+            onClick={(e) => {
+              if (window.location.pathname === '/') {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+          >
+            <img 
+              src="/Logo-Liturgia-SJE.png" 
+              alt="Logo Liturgia SJE" 
+              className="h-14 w-auto drop-shadow-sm group-hover:drop-shadow-md transition-all"
+            />
+            {!centerLogo && (
+              <div className="flex flex-col">
+                <h1 className="text-xl font-black tracking-tight text-stone-800 leading-none">
+                  Liturgia SJE
+                </h1>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                  Painel do Leitor
+                </span>
+              </div>
+            )}
+          </Link>
+        </div>
         
-        {/* Botão de Instalação (PWA) */}
-        {isInstallable && (
+        {/* Botão de Instalação (PWA) - Escondido se logo centralizado para evitar poluição */}
+        {isInstallable && !centerLogo && (
           <div className="flex-1 flex justify-center ml-2 mr-12">
             <button
               onClick={handleInstallClick}

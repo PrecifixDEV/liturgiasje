@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Search, UserCircle, UserKey } from "lucide-react"
 import { toast } from "sonner"
-import { Header } from "@/components/Header"
 import { userService } from "@/services/userService"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -30,7 +29,7 @@ import { MemberForm } from "@/components/MemberForm"
 import { Input } from "@/components/ui/input"
 
 export default function AdminMembersPage() {
-  const { user, profile, loading, signInWithGoogle, signOut } = useAuth()
+  const { user, profile, loading } = useAuth()
   const router = useRouter()
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -99,11 +98,6 @@ export default function AdminMembersPage() {
     )
   }, [members, searchTerm])
 
-  const headerUser = profile ? {
-    full_name: profile.full_name,
-    avatar_url: profile.avatar_url,
-    role: profile.role
-  } : null
 
   if (loading || (user && !profile)) {
     return (
@@ -115,12 +109,7 @@ export default function AdminMembersPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-50/30">
-      <Header 
-        user={headerUser} 
-        onSignIn={signInWithGoogle}
-        onSignOut={signOut}
-      />
-
+      
       <main className="flex-1 overflow-auto">
         <div className="container max-w-md mx-auto px-4 py-6 space-y-6 pb-20">
           
