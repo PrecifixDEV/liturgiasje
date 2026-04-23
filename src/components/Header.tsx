@@ -84,14 +84,15 @@ export function Header({
         )}
 
         {/* Logo e Título (Centralizado se centerLogo for true) */}
-        <div className={`flex items-center gap-2 transition-all duration-300 ${
+        <div className={`flex items-center gap-2 ${
           centerLogo 
             ? 'absolute left-1/2 -translate-x-1/2' 
             : 'flex-1'
         }`}>
           <Link 
+            key={centerLogo ? 'centered' : 'left'}
             href="/" 
-            className="flex items-center gap-2 transition-transform active:scale-95 group"
+            className="flex items-center gap-2 transition-transform active:scale-95 group animate-in fade-in duration-500"
             onClick={(e) => {
               if (window.location.pathname === '/') {
                 e.preventDefault();
