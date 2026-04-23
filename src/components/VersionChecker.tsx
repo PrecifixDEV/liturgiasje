@@ -80,14 +80,13 @@ export function VersionChecker() {
       }
 
       // 3. Forçar recarregamento ignorando cache do navegador (URL busting)
-      // Adicionar um parâmetro na URL garante que o navegador busque o index.html novo
-      const url = new URL(window.location.href);
-      url.searchParams.set('v', Date.now().toString());
+      // No Safari, redirecionar para a raiz com query param é mais eficaz que reload()
+      const clearUrl = window.location.origin + '/?clear=' + Date.now();
       
       if (silent) {
-        window.location.replace(url.toString());
+        window.location.replace(clearUrl);
       } else {
-        window.location.href = url.toString();
+        window.location.href = clearUrl;
       }
     } catch (e) {
       window.location.reload();

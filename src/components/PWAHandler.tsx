@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
+import { APP_VERSION } from "@/constants/version"
 
 declare global {
   interface Window {
@@ -90,7 +91,8 @@ export function PWAHandler() {
 
       const registerServiceWorker = async () => {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js')
+          // Adicionamos ?v= para contornar o cache do Safari no arquivo sw.js
+          const registration = await navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`)
           
           // Função para mostrar o aviso de atualização
           const showUpdateToast = (waitingWorker: ServiceWorker) => {
