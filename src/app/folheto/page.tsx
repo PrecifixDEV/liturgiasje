@@ -22,11 +22,10 @@ export default function FolhetoPage() {
         )}
         
         <iframe 
-          src="https://www.arqrio.com.br/app/painel/amissa/amissa.pdf#toolbar=0"
+          src={`https://docs.google.com/gview?url=https://www.arqrio.com.br/app/painel/amissa/amissa.pdf&embedded=true`}
           className="w-full h-full border-none shadow-inner"
           onLoad={() => setIsLoading(false)}
           title="Folheto da Missa"
-          allow="autoplay"
         />
       </main>
     </div>
