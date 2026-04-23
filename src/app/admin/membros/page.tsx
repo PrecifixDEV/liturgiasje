@@ -113,12 +113,7 @@ export default function AdminMembersPage() {
       <main className="flex-1 overflow-auto">
         <div className="container max-w-md mx-auto px-4 py-6 space-y-6 pb-20">
           
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="h-8 w-8 rounded-full">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-xl font-bold text-stone-800">Gestão de Membros</h1>
-          </div>
+
 
           <div className="space-y-4">
             <div className="flex gap-2">

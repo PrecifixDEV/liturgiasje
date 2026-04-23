@@ -103,12 +103,7 @@ export default function ProfilePage() {
       <main className="flex-1 overflow-auto">
         <div className="container max-w-md mx-auto px-4 py-8 space-y-8 pb-20">
           
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="h-8 w-8 rounded-full">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-xl font-bold text-stone-800">Meu Perfil</h1>
-          </div>
+
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm space-y-6">

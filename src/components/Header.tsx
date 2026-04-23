@@ -83,11 +83,15 @@ export function Header({
           </button>
         )}
 
-        {/* Logo e Título (Pode ser centralizado) */}
-        <div className={`flex items-center gap-3 transition-transform ${centerLogo ? 'mx-auto' : ''}`}>
+        {/* Logo e Título (Centralizado se centerLogo for true) */}
+        <div className={`flex items-center gap-2 transition-all duration-300 ${
+          centerLogo 
+            ? 'absolute left-1/2 -translate-x-1/2' 
+            : 'flex-1'
+        }`}>
           <Link 
             href="/" 
-            className="flex items-center gap-3 transition-transform active:scale-95 group"
+            className="flex items-center gap-2 transition-transform active:scale-95 group"
             onClick={(e) => {
               if (window.location.pathname === '/') {
                 e.preventDefault();
@@ -96,20 +100,18 @@ export function Header({
             }}
           >
             <img 
-              src="/Logo-Liturgia-SJE.png" 
+              src="/favicon.png" 
               alt="Logo Liturgia SJE" 
-              className="h-14 w-auto drop-shadow-sm group-hover:drop-shadow-md transition-all"
+              className={`${centerLogo ? 'h-10 w-10' : 'h-14 w-auto'} drop-shadow-sm group-hover:drop-shadow-md transition-all rounded-xl`}
             />
-            {!centerLogo && (
-              <div className="flex flex-col">
-                <h1 className="text-xl font-black tracking-tight text-stone-800 leading-none">
-                  Liturgia SJE
-                </h1>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
-                  Painel do Leitor
-                </span>
-              </div>
-            )}
+            <div className={`flex flex-col ${centerLogo ? 'items-start' : ''}`}>
+              <h1 className={`${centerLogo ? 'text-lg' : 'text-xl'} font-black tracking-tight text-stone-800 leading-none`}>
+                Liturgia SJE
+              </h1>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                Painel do Leitor
+              </span>
+            </div>
           </Link>
         </div>
         
