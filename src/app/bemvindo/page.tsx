@@ -19,12 +19,16 @@ export default function OnboardingPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Redirecionar se não estiver logado
+  // Redirecionar se não estiver logado OU se já for membro
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/")
+    if (!loading) {
+      if (!user) {
+        router.push("/")
+      } else if (isMember) {
+        router.push("/")
+      }
     }
-  }, [user, loading, router])
+  }, [user, isMember, loading, router])
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return
