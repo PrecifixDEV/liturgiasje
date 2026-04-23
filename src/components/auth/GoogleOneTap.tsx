@@ -1,20 +1,19 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 
 export function GoogleOneTap() {
   const { user, loading } = useAuth()
+  const isInitialized = useRef(false)
 
   useEffect(() => {
-    if (loading || user) return
-
-    let isInitialized = false
+    if (loading || user || isInitialized.current) return
 
     const initializeOneTap = async () => {
-      if (!window.google || isInitialized) return
-      isInitialized = true
+      if (!window.google || isInitialized.current) return
+      isInitialized.current = true
 
       // Gerar nonce para segurança
       const rawNonce = Math.random().toString(36).substring(2, 15)
@@ -38,6 +37,7 @@ export function GoogleOneTap() {
             console.log("Login One Tap realizado com sucesso")
           } catch (error) {
             console.error("Erro no login One Tap:", error)
+            isInitialized.current = false // Permitir tentar novamente em caso de erro
           }
         },
         auto_select: false,
@@ -47,10 +47,11 @@ export function GoogleOneTap() {
       })
 
       window.google.accounts.id.prompt((notification: any) => {
-        // FedCM gerencia a exibição de forma privada no navegador.
-        // Métodos como isNotDisplayed() e getNotDisplayedReason() foram removidos conforme diretrizes da FedCM.
-        if (notification.isSkippedMoment()) {
-          console.log("One Tap pulado.")
+        // Com FedCM, o gerenciamento de exibição é feito pelo navegador.
+        // O callback de notificação pode ser usado para logs básicos se necessário,
+        // mas métodos como isSkippedMoment() foram depreciados.
+        if (notification.isDisplayMoment()) {
+          console.log("Google One Tap: Prompt exibido")
         }
       })
     }

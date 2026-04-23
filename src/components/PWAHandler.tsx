@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 import { toast } from "sonner"
+import { useAuth } from "@/hooks/useAuth"
 
 declare global {
   interface Window {
@@ -10,6 +11,8 @@ declare global {
 }
 
 export function PWAHandler() {
+  const { user } = useAuth()
+
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       
@@ -24,6 +27,9 @@ export function PWAHandler() {
 
       const subscribeToNotifications = async (registration: ServiceWorkerRegistration) => {
         try {
+          // Só tenta subscrever se houver um usuário autenticado
+          if (!user) return;
+
           // 1. Verificar se notificações são suportadas
           if (!('Notification' in window)) return;
 
@@ -59,7 +65,7 @@ export function PWAHandler() {
 
       const performSubscription = async (registration: ServiceWorkerRegistration) => {
         const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        if (!publicVapidKey) return;
+        if (!publicVapidKey || !user) return;
 
         let subscription = await registration.pushManager.getSubscription();
 
@@ -71,11 +77,15 @@ export function PWAHandler() {
         }
 
         // Enviar subscrição para o servidor
-        await fetch('/api/push/subscribe', {
-          method: 'POST',
-          body: JSON.stringify({ subscription }),
-          headers: { 'Content-Type': 'application/json' }
-        });
+        try {
+          await fetch('/api/push/subscribe', {
+            method: 'POST',
+            body: JSON.stringify({ subscription }),
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (err) {
+          console.error('Erro ao enviar subscrição para o servidor:', err);
+        }
       };
 
       const registerServiceWorker = async () => {
@@ -96,7 +106,7 @@ export function PWAHandler() {
             });
           };
 
-          // 1. Verificar se já existe um worker esperando (ex: carregou a página e tinha um pendente)
+          // 1. Verificar se já existe um worker esperando
           if (registration.waiting) {
             showUpdateToast(registration.waiting);
           }
@@ -113,67 +123,67 @@ export function PWAHandler() {
 
           console.log('PWA Service Worker registrado com sucesso:', registration.scope)
           
-          // Forçar uma checagem de atualização imediata e depois a cada 10 minutos
           registration.update();
           
-          // Tentar subscrever para notificações após registro bem sucedido
           await subscribeToNotifications(registration);
 
-          // Verificar atualizações manualmente frequentes (polling de 5 minutos)
-          setInterval(() => {
+          const intervalId = setInterval(() => {
             registration.update();
           }, 5 * 60 * 1000);
 
-          // Verificar atualizações toda vez que a página ganha foco (ex: usuário abre o app)
-          window.addEventListener('focus', () => {
+          const focusHandler = () => {
             registration.update();
-          });
+          };
+          window.addEventListener('focus', focusHandler);
 
-          // Também checar ao voltar de outra aba
-          document.addEventListener('visibilitychange', () => {
+          const visibilityHandler = () => {
             if (document.visibilityState === 'visible') {
               registration.update();
             }
-          });
+          };
+          document.addEventListener('visibilitychange', visibilityHandler);
 
+          return { intervalId, focusHandler, visibilityHandler };
         } catch (error) {
           console.error('Erro ao registrar PWA Service Worker:', error)
+          return null;
         }
       }
 
-      // Tenta registrar apenas se o ambiente não for de desenvolvimento ou se for localhost seguro
+      let cleanup: any = null;
       if (process.env.NODE_ENV === 'production' || window.location.hostname === 'localhost') {
-        registerServiceWorker()
+        registerServiceWorker().then(c => cleanup = c);
       }
+
+      // 2. Lógica de Instalação Manual
+      const handleBeforeInstallPrompt = (e: any) => {
+        e.preventDefault();
+        window.deferredPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwa-installable'));
+      };
+
+      const handleAppInstalled = () => {
+        window.deferredPrompt = null;
+        window.dispatchEvent(new CustomEvent('pwa-installed'));
+        console.log('PWA: Aplicativo instalado com sucesso!');
+      };
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.addEventListener('appinstalled', handleAppInstalled);
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+        if (cleanup) {
+          clearInterval(cleanup.intervalId);
+          window.removeEventListener('focus', cleanup.focusHandler);
+          document.removeEventListener('visibilitychange', cleanup.visibilityHandler);
+        }
+      };
     }
+  }, [user])
 
-    // 2. Lógica de Instalação Manual
-    const handleBeforeInstallPrompt = (e: any) => {
-      // Previne o mini-infobar do Chrome no mobile
-      e.preventDefault();
-      // Armazena o evento para disparar o prompt depois
-      window.deferredPrompt = e;
-      // Notifica o app que a instalação está disponível
-      window.dispatchEvent(new CustomEvent('pwa-installable'));
-    };
-
-    const handleAppInstalled = () => {
-      // Limpar o prompt após instalação
-      window.deferredPrompt = null;
-      window.dispatchEvent(new CustomEvent('pwa-installed'));
-      console.log('PWA: Aplicativo instalado com sucesso!');
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, [])
-
-  return null // Este componente não renderiza nada visualmente
+  return null
 }
 
 // Auxiliar para converter a chave VAPID

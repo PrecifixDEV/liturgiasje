@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import {
   Accordion,
   AccordionContent,
@@ -10,10 +10,103 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { CheckCircle2, Megaphone, Music, Maximize2, Calendar as CalendarIcon, Clock, Eye, Pencil, Trash2, User as UserIcon, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle2, Megaphone, Music, Maximize2, Calendar as CalendarIcon, Clock, Eye, Pencil, Trash2, User as UserIcon, RefreshCw, ChevronLeft, ChevronRight, Play, Pause, FastForward } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+
+interface AudioPlayerProps {
+  url: string;
+  index: number;
+}
+
+function AudioPlayer({ url, index }: AudioPlayerProps) {
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [progress, setProgress] = useState(0)
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
+    }
+  }
+
+  const changeRate = () => {
+    const rates = [1, 1.5, 2]
+    const nextRate = rates[(rates.indexOf(playbackRate) + 1) % rates.length]
+    setPlaybackRate(nextRate)
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextRate
+    }
+  }
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      const current = audioRef.current.currentTime
+      const duration = audioRef.current.duration
+      setProgress((current / duration) * 100)
+    }
+  }
+
+  return (
+    <div className="group relative flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-3 pt-4 shadow-sm transition-all hover:border-amber-200 hover:shadow-md">
+      <div className="flex items-center gap-2 mb-1 px-1">
+        <div className="bg-amber-100 p-1.5 rounded-full">
+          <Music className="h-4 w-4 text-amber-700" />
+        </div>
+        <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">
+          Áudio {index + 1}
+        </span>
+      </div>
+      
+      <div className="flex items-center gap-3">
+        <button 
+          onClick={togglePlay}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white shadow-sm hover:bg-amber-600 transition-all active:scale-95"
+        >
+          {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
+        </button>
+
+        <div className="flex-1 space-y-1">
+          <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-amber-500 transition-all duration-100" 
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="flex justify-between items-center">
+             <span className="text-[8px] font-bold text-stone-400 uppercase tracking-tighter">
+                {playbackRate === 1 ? "Normal" : `${playbackRate}x`}
+             </span>
+          </div>
+        </div>
+
+        <button 
+          onClick={changeRate}
+          className="flex h-8 w-12 items-center justify-center rounded-lg border border-stone-200 bg-stone-50 text-[10px] font-black text-stone-600 hover:bg-stone-100 transition-colors"
+        >
+          {playbackRate}x
+        </button>
+      </div>
+
+      <audio 
+        ref={audioRef}
+        src={url} 
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={() => setIsPlaying(false)}
+        className="hidden" 
+      />
+      
+      <div className="absolute -inset-px rounded-xl bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+    </div>
+  )
+}
 
 interface AnnouncementProps {
   id: string
@@ -23,6 +116,7 @@ interface AnnouncementProps {
   image_url?: string
   image_urls?: string[]
   audio_url?: string
+  audio_urls?: string[]
   expires_at?: string
   createdAt?: string
   isRead?: boolean
@@ -48,6 +142,7 @@ export function AnnouncementCard({
   image_url,
   image_urls = [],
   audio_url,
+  audio_urls = [],
   expires_at,
   createdAt,
   isRead,
@@ -68,6 +163,7 @@ export function AnnouncementCard({
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null)
   
   const allImages = (image_urls.length > 0 ? image_urls : [image_url]).filter(Boolean) as string[]
+  const allAudios = (audio_urls.length > 0 ? audio_urls : [audio_url]).filter(Boolean) as string[]
   
   // Para fins de comparação, assumimos que se o usuário pode ver o botão, ele está logado.
   // No page.tsx passaremos o ID do usuário logado se necessário, mas aqui usaremosauthorId.
@@ -133,7 +229,7 @@ export function AnnouncementCard({
           {/* Direita: Ações */}
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => onEdit?.({ id, title, content, expires_at, image_url, image_urls, audio_url })}
+              onClick={() => onEdit?.({ id, title, content, expires_at, image_url, image_urls, audio_url, audio_urls })}
               className="p-1.5 hover:bg-amber-100 rounded-lg text-stone-500 hover:text-stone-800 transition-colors"
                 title="Editar"
             >
@@ -200,7 +296,7 @@ export function AnnouncementCard({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-3 pb-3 pt-0">
-            <div className="space-y-2 pt-1.5">
+            <div className="space-y-4 pt-1.5">
               <p className="text-sm leading-relaxed text-stone-600 whitespace-pre-wrap">
                 {content}
               </p>
@@ -280,22 +376,12 @@ export function AnnouncementCard({
                 </DialogContent>
               </Dialog>
 
-              {audio_url && (
-                <div className="group relative flex flex-col gap-2 rounded-xl border border-stone-200 bg-white p-3 pt-4 shadow-sm transition-all hover:border-amber-200 hover:shadow-md">
-                  <div className="flex items-center gap-2 mb-1 px-1">
-                    <div className="bg-amber-100 p-1.5 rounded-full">
-                      <Music className="h-4 w-4 text-amber-700" />
-                    </div>
-                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">
-                      Mensagem de Áudio
-                    </span>
-                  </div>
-                  <audio 
-                    src={audio_url} 
-                    controls 
-                    className="h-10 w-full brightness-95 contrast-125" 
-                  />
-                  <div className="absolute -inset-px rounded-xl bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+              {/* Renderização de Áudios */}
+              {allAudios.length > 0 && (
+                <div className="flex flex-col gap-3 pt-2">
+                  {allAudios.map((url, idx) => (
+                    <AudioPlayer key={idx} url={url} index={idx} />
+                  ))}
                 </div>
               )}
 

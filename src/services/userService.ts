@@ -13,6 +13,17 @@ export interface UserProfile {
   is_self_registered?: boolean
 }
 
+/**
+ * Extrai o caminho relativo do arquivo dentro do bucket a partir de uma URL pública do Supabase.
+ */
+function extractPathFromUrl(url: string, bucketName: string = 'avatars'): string | null {
+  if (!url) return null
+  const searchStr = `/storage/v1/object/public/${bucketName}/`
+  const index = url.indexOf(searchStr)
+  if (index === -1) return null
+  return url.substring(index + searchStr.length)
+}
+
 export const userService = {
   async getProfile(userId: string): Promise<UserProfile | null> {
     const { data, error } = await supabase
@@ -93,6 +104,10 @@ export const userService = {
   },
 
   async uploadAvatar(userId: string, file: Blob): Promise<string> {
+    // 0. Buscar perfil atual para identificar o avatar antigo
+    const oldProfile = await this.getProfile(userId)
+    const oldAvatarUrl = oldProfile?.avatar_url
+
     const fileName = `${userId}/avatar-${Date.now()}.webp`
     
     // 1. Upload do arquivo
@@ -112,6 +127,17 @@ export const userService = {
 
     // 3. Atualizar o perfil com a nova URL
     await this.updateProfile(userId, { avatar_url: publicUrl })
+
+    // 4. Limpar o avatar antigo se existir e for diferente do novo
+    if (oldAvatarUrl) {
+      const oldPath = extractPathFromUrl(oldAvatarUrl, 'avatars')
+      if (oldPath) {
+        await supabase.storage
+          .from('avatars')
+          .remove([oldPath])
+          .catch(err => console.error("Erro ao remover avatar antigo:", err))
+      }
+    }
 
     return publicUrl
   },

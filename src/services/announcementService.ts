@@ -17,7 +17,7 @@ export interface CreateAnnouncementData {
   type: 'Aviso' | 'Troca'
   expires_at: Date | null
   imageFiles?: File[] | null
-  audioFile?: File | null
+  audioFiles?: File[] | null
 }
 
 export interface Announcement {
@@ -28,6 +28,7 @@ export interface Announcement {
   image_url?: string
   image_urls?: string[]
   audio_url?: string
+  audio_urls?: string[]
   expires_at?: string
   created_at: string
   created_by: string
@@ -42,7 +43,7 @@ export const announcementService = {
     if (!user) throw new Error("Usuário não autenticado")
 
     const imageUrls: string[] = []
-    let audioUrl = ""
+    const audioUrls: string[] = []
 
     // 1. Upload de Imagens se houver
     if (data.imageFiles && data.imageFiles.length > 0) {
@@ -65,23 +66,25 @@ export const announcementService = {
       }
     }
 
-    // 2. Upload de Áudio se houver
-    if (data.audioFile) {
-      const fileExt = data.audioFile.name.split('.').pop()
-      const fileName = `${Math.random()}.${fileExt}`
-      const filePath = `announcements/audio/${fileName}`
+    // 2. Upload de Áudios se houver
+    if (data.audioFiles && data.audioFiles.length > 0) {
+      for (const file of data.audioFiles) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random()}.${fileExt}`
+        const filePath = `announcements/audio/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('announcement_media')
-        .upload(filePath, data.audioFile)
+        const { error: uploadError } = await supabase.storage
+          .from('announcement_media')
+          .upload(filePath, file)
 
-      if (uploadError) throw uploadError
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('announcement_media')
-        .getPublicUrl(filePath)
-      
-      audioUrl = publicUrl
+        if (uploadError) throw uploadError
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('announcement_media')
+          .getPublicUrl(filePath)
+        
+        audioUrls.push(publicUrl)
+      }
     }
 
     // 3. Salvar no Banco
@@ -93,7 +96,8 @@ export const announcementService = {
         type: data.type,
         image_url: imageUrls[0] || "", // Mantém para retrocompatibilidade
         image_urls: imageUrls,
-        audio_url: audioUrl,
+        audio_url: audioUrls[0] || "", // Mantém para retrocompatibilidade
+        audio_urls: audioUrls,
         expires_at: data.expires_at?.toISOString(),
         created_by: user.id
       })
@@ -147,7 +151,7 @@ export const announcementService = {
     // 1. Buscar o anúncio para saber quais arquivos deletar
     const { data: ann } = await supabase
       .from('announcements')
-      .select('image_url, image_urls, audio_url')
+      .select('image_url, image_urls, audio_url, audio_urls')
       .eq('id', id)
       .single()
 
@@ -155,23 +159,25 @@ export const announcementService = {
       const pathsToDelete: string[] = []
       
       // Coletar caminhos de imagens
-      const urls = [...(ann.image_urls || []), ann.image_url].filter(Boolean) as string[]
-      urls.forEach(url => {
+      const imgUrls = [...(ann.image_urls || []), ann.image_url].filter(Boolean) as string[]
+      imgUrls.forEach(url => {
         const path = extractPathFromUrl(url)
         if (path) pathsToDelete.push(path)
       })
 
-      // Coletar caminho de áudio
-      if (ann.audio_url) {
-        const path = extractPathFromUrl(ann.audio_url)
+      // Coletar caminhos de áudio
+      const audUrls = [...(ann.audio_urls || []), ann.audio_url].filter(Boolean) as string[]
+      audUrls.forEach(url => {
+        const path = extractPathFromUrl(url)
         if (path) pathsToDelete.push(path)
-      }
+      })
 
-      // Deletar arquivos do Storage
-      if (pathsToDelete.length > 0) {
+      // Deletar arquivos do Storage (Remover duplicados)
+      const uniquePaths = Array.from(new Set(pathsToDelete))
+      if (uniquePaths.length > 0) {
         await supabase.storage
           .from('announcement_media')
-          .remove(pathsToDelete)
+          .remove(uniquePaths)
       }
     }
 
@@ -196,7 +202,7 @@ export const announcementService = {
   },
 
   async update(id: string, data: any) {
-    const { imageFiles, audioFile, ...rest } = data
+    const { imageFiles, audioFiles, ...rest } = data
     const finalData = { ...rest }
 
     // 1. Upload de Novas Imagens se houver
@@ -229,31 +235,40 @@ export const announcementService = {
       finalData.image_url = finalData.image_urls[0] || ""
     }
 
-    // 2. Upload de Novo Áudio se houver
-    if (audioFile) {
-      const fileExt = audioFile.name.split('.').pop()
-      const fileName = `${Math.random()}.${fileExt}`
-      const filePath = `announcements/audio/${fileName}`
+    // 2. Upload de Novos Áudios se houver
+    if (audioFiles && audioFiles.length > 0) {
+      const newUrls: string[] = []
+      for (const file of audioFiles) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random()}.${fileExt}`
+        const filePath = `announcements/audio/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('announcement_media')
-        .upload(filePath, audioFile)
+        const { error: uploadError } = await supabase.storage
+          .from('announcement_media')
+          .upload(filePath, file)
 
-      if (uploadError) throw uploadError
+        if (uploadError) throw uploadError
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('announcement_media')
+          .getPublicUrl(filePath)
+        
+        newUrls.push(publicUrl)
+      }
       
-      const { data: { publicUrl } } = supabase.storage
-        .from('announcement_media')
-        .getPublicUrl(filePath)
-      
-      finalData.audio_url = publicUrl
-    } else if (data.audio_url === null || data.audio_url === "") {
-      finalData.audio_url = ""
+      // Combinar com as URLs existentes passadas no rest.audio_urls
+      finalData.audio_urls = [...(rest.audio_urls || []), ...newUrls]
+    }
+
+    // Garantir que audio_url esteja sempre sincronizado com o primeiro item do array
+    if (finalData.audio_urls) {
+      finalData.audio_url = finalData.audio_urls[0] || ""
     }
 
     // 0. Antes de atualizar, verificar mídias removidas para limpar o Storage
     const { data: oldAnn } = await supabase
       .from('announcements')
-      .select('image_urls, audio_url')
+      .select('image_urls, audio_urls')
       .eq('id', id)
       .single()
 
@@ -271,10 +286,15 @@ export const announcementService = {
         })
       }
 
-      // Verificar áudio removido
-      if (oldAnn.audio_url && finalData.audio_url !== undefined && finalData.audio_url !== oldAnn.audio_url) {
-        const path = extractPathFromUrl(oldAnn.audio_url)
-        if (path) removedFiles.push(path)
+      // Verificar áudios removidos
+      if (oldAnn.audio_urls && Array.isArray(oldAnn.audio_urls)) {
+        const newUrls = finalData.audio_urls || []
+        oldAnn.audio_urls.forEach((oldUrl: string) => {
+          if (!newUrls.includes(oldUrl)) {
+            const path = extractPathFromUrl(oldUrl)
+            if (path) removedFiles.push(path)
+          }
+        })
       }
 
       if (removedFiles.length > 0) {
