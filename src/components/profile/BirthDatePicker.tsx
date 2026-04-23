@@ -61,7 +61,7 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
         <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Dia" />
         </SelectTrigger>
-        <SelectContent className="max-h-[300px]">
+        <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)] min-w-0">
           {days.map((d) => (
             <SelectItem key={d} value={d} className="font-bold">{d}</SelectItem>
           ))}
@@ -80,7 +80,7 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
         <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Mês" />
         </SelectTrigger>
-        <SelectContent className="max-h-[300px]">
+        <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)] min-w-0">
           {months.map((m) => (
             <SelectItem key={m.value} value={m.value} className="font-bold">{m.label}</SelectItem>
           ))}
@@ -99,7 +99,7 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
         <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Ano" />
         </SelectTrigger>
-        <SelectContent className="max-h-[300px]">
+        <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)] min-w-0">
           {years.map((y) => (
             <SelectItem key={y} value={y} className="font-bold">{y}</SelectItem>
           ))}
