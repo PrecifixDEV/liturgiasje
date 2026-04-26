@@ -7,28 +7,31 @@ import { memberService, Member } from "@/services/memberService"
 import { userService } from "@/services/userService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loader2, Search, UserPlus } from "lucide-react"
+import { CheckCircle, Loader2, Search, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 
 export default function OnboardingPage() {
   const { user, profile, isMember, loading, refreshProfile } = useAuth()
   const router = useRouter()
+  const [wasAlreadyMember, setWasAlreadyMember] = useState<boolean | null>(null)
+  const [isClaimedInSession, setIsClaimedInSession] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState<Member[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Redirecionar se não estiver logado OU se já for membro
+  // Redirecionar se não estiver logado ou se já for membro (e não acabou de vincular agora)
   useEffect(() => {
     if (!loading) {
       if (!user) {
         router.push("/")
-      } else if (isMember) {
+      } else if (isMember && !isClaimedInSession) {
+        // Se já é membro reconhecido, volta para a home imediatamente
         router.push("/")
       }
     }
-  }, [user, isMember, loading, router])
+  }, [user, isMember, loading, router, isClaimedInSession])
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return
@@ -62,9 +65,9 @@ export default function OnboardingPage() {
       // 2. Vincular na tabela members
       await memberService.claim(member.id, user.id)
       
+      setIsClaimedInSession(true)
       toast.success("Perfil vinculado com sucesso!")
       await refreshProfile()
-      router.push("/perfil")
     } catch (error: any) {
       toast.error("Erro ao vincular perfil.")
       console.error("Erro detalhado:", error.message || error.details || error)
@@ -97,9 +100,9 @@ export default function OnboardingPage() {
         claimed_by: user.id
       })
       
+      setIsClaimedInSession(true)
       toast.success("Perfil criado e vinculado!")
       await refreshProfile()
-      router.push("/perfil")
     } catch (error) {
       toast.error("Erro ao criar perfil.")
     } finally {
@@ -123,49 +126,67 @@ export default function OnboardingPage() {
           <p className="text-stone-500 text-sm">Para continuar, precisamos vincular seu acesso ao seu cadastro de leitor.</p>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-6">
-          <div className="space-y-4">
-            <label className="text-xs font-bold uppercase tracking-widest text-stone-400">Busque pelo seu nome, ou pelo whatsapp</label>
-            <div className="flex gap-2">
-              <Input 
-                placeholder="Ex: João Silva" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="rounded-xl border-stone-200 focus-visible:ring-stone-200"
-              />
-              <Button onClick={handleSearch} disabled={isSearching} className="rounded-xl bg-stone-800 hover:bg-black">
-                {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              </Button>
+        {isMember ? (
+          <div className="bg-white p-8 rounded-2xl border border-stone-100 shadow-sm space-y-6 text-center animate-in fade-in zoom-in duration-500">
+            <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-2">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-stone-900">Vínculo realizado com sucesso!</h2>
+              <p className="text-stone-500 text-sm">Seu acesso agora está conectado ao seu perfil de leitor.</p>
+            </div>
+            <Button 
+              onClick={() => router.push("/perfil")}
+              className="w-full h-12 rounded-xl bg-stone-900 text-white hover:bg-black font-bold text-base"
+            >
+              Preencher seu perfil
+            </Button>
+          </div>
+        ) : (
+          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-6">
+            <div className="space-y-4">
+              <label className="text-xs font-bold uppercase tracking-widest text-stone-400">Busque pelo seu nome, ou pelo whatsapp</label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Ex: João Silva" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="rounded-xl border-stone-200 focus-visible:ring-stone-200"
+                />
+                <Button onClick={handleSearch} disabled={isSearching} className="rounded-xl bg-stone-800 hover:bg-black">
+                  {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              {searchResults.length > 0 ? (
+                searchResults.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => handleClaim(m)}
+                    className="w-full flex items-center justify-between p-4 rounded-xl border border-stone-100 bg-stone-50/50 hover:bg-stone-100 transition-colors text-left"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-semibold text-stone-800">{m.full_name}</p>
+                      <p className="text-[10px] text-stone-500">{m.whatsapp || "WhatsApp não cadastrado"}</p>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white px-2 py-1 rounded-md border border-stone-100">Este sou eu</span>
+                  </button>
+                ))
+              ) : searchTerm && !isSearching ? (
+                <p className="text-center text-xs text-stone-400 py-4">Nenhum resultado encontrado.</p>
+              ) : null}
+            </div>
+
+            <div className="pt-4 border-t border-stone-100">
+              <p className="text-center text-xs text-stone-500 italic">
+                Caso não esteja encontrando seus dados, entre em contato com a coordenação.
+              </p>
             </div>
           </div>
-
-          <div className="space-y-3 pt-2">
-            {searchResults.length > 0 ? (
-              searchResults.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => handleClaim(m)}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-stone-100 bg-stone-50/50 hover:bg-stone-100 transition-colors text-left"
-                >
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-semibold text-stone-800">{m.full_name}</p>
-                    <p className="text-[10px] text-stone-500">{m.whatsapp || "WhatsApp não cadastrado"}</p>
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-white px-2 py-1 rounded-md border border-stone-100">Este sou eu</span>
-                </button>
-              ))
-            ) : searchTerm && !isSearching ? (
-              <p className="text-center text-xs text-stone-400 py-4">Nenhum resultado encontrado.</p>
-            ) : null}
-          </div>
-
-          <div className="pt-4 border-t border-stone-100">
-            <p className="text-center text-xs text-stone-500 italic">
-              Caso não esteja encontrando seus dados, entre em contato com a coordenação.
-            </p>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

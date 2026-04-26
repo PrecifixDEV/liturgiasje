@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Cake, ChevronDown, ChevronUp, PartyPopper } from "lucide-react"
 import { format, isToday, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { UserAvatarLightbox } from "@/components/profile/UserAvatarLightbox"
 
 interface BirthdayMember {
   id: string
@@ -54,20 +55,22 @@ export function BirthdayCard({ members, currentMonth }: BirthdayCardProps) {
               <div className="space-y-1">
                 {todayBirthdays.map((m) => (
                   <div key={m.id} className="flex items-center gap-3">
-                    <div className="relative">
-                      <Avatar className="h-9 w-9 border-2 border-amber-200">
-                        <AvatarImage src={m.avatar_url} />
-                        <AvatarFallback className="bg-amber-50 text-amber-500 font-bold text-xs">
-                          {m.full_name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {/* Chapéu de Aniversário */}
-                      <img 
-                        src="/hat-birthday-svgrepo-com.svg" 
-                        alt="Chapéu" 
-                        className="absolute -top-3.5 -left-1 w-6 h-6 -rotate-12 drop-shadow-sm pointer-events-none"
-                      />
-                    </div>
+                    <UserAvatarLightbox name={m.full_name} avatarUrl={m.avatar_url}>
+                      <div className="relative">
+                        <Avatar className="h-9 w-9 border-2 border-amber-200">
+                          <AvatarImage src={m.avatar_url} />
+                          <AvatarFallback className="bg-amber-50 text-amber-500 font-bold text-xs">
+                            {m.full_name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {/* Chapéu de Aniversário */}
+                        <img 
+                          src="/hat-birthday-svgrepo-com.svg" 
+                          alt="Chapéu" 
+                          className="absolute -top-3.5 -left-1 w-6 h-6 -rotate-12 drop-shadow-sm pointer-events-none"
+                        />
+                      </div>
+                    </UserAvatarLightbox>
                     <div className="flex flex-col">
                       <span className="text-[11px] font-black uppercase tracking-tight text-amber-600 flex items-center gap-1">
                          É hoje! Parabéns! <PartyPopper className="h-3 w-3" />
@@ -113,21 +116,23 @@ export function BirthdayCard({ members, currentMonth }: BirthdayCardProps) {
               return (
                 <div key={m.id} className="flex items-center justify-between bg-white p-3 rounded-2xl border border-stone-100 shadow-sm">
                   <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={m.avatar_url} />
-                        <AvatarFallback className="bg-stone-100 text-stone-400">
-                          {m.full_name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {isTodayBirthday && (
-                        <img 
-                          src="/hat-birthday-svgrepo-com.svg" 
-                          alt="Chapéu" 
-                          className="absolute -top-4 -left-1 w-7 h-7 -rotate-12 pointer-events-none"
-                        />
-                      )}
-                    </div>
+                    <UserAvatarLightbox name={m.full_name} avatarUrl={m.avatar_url}>
+                      <div className="relative">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={m.avatar_url} />
+                          <AvatarFallback className="bg-stone-100 text-stone-400">
+                            {m.full_name.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isTodayBirthday && (
+                          <img 
+                            src="/hat-birthday-svgrepo-com.svg" 
+                            alt="Chapéu" 
+                            className="absolute -top-4 -left-1 w-7 h-7 -rotate-12 pointer-events-none"
+                          />
+                        )}
+                      </div>
+                    </UserAvatarLightbox>
                     <div>
                       <p className="text-sm font-bold text-stone-800">{m.full_name}</p>
                       <p className="text-[10px] text-stone-500 font-medium capitalize">

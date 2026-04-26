@@ -174,7 +174,7 @@ export function AnnouncementCard({
   return (
     <Card className={`overflow-hidden p-0 gap-0 transition-all duration-500 ${
       shouldShowGlow 
-        ? `${isExpanded ? "border-amber-400 bg-white shadow-sm" : "border-amber-400 bg-white shadow-md animate-glow-pulse ring-2 ring-amber-100 ring-offset-1"}` 
+        ? `${isExpanded ? "border-red-400 bg-white shadow-sm" : "border-red-400 bg-white shadow-md animate-glow-pulse ring-2 ring-red-100 ring-offset-1"}` 
         : isRead ? "border-green-500 bg-white shadow-sm hover:bg-white/90" : "border-stone-200 bg-white shadow-sm"
     }`}>
       {/* Barra de Ações Administrativas (Admin Only) */}
@@ -277,7 +277,13 @@ export function AnnouncementCard({
             hideChevron={!isLoggedIn}
           >
             <div className="flex items-center gap-2 text-left w-full pr-2">
-              <div className={`rounded-full p-2 shrink-0 ${type === 'Troca' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+              <div className={`rounded-full p-2 shrink-0 ${
+                shouldShowGlow 
+                  ? 'bg-red-100 text-red-700 animate-pulse' 
+                  : type === 'Troca' 
+                    ? 'bg-amber-100 text-amber-700' 
+                    : 'bg-green-100 text-green-700'
+              }`}>
                 {type === 'Troca' ? <RefreshCw className="h-4 w-4" /> : <Megaphone className="h-4 w-4" />}
               </div>
               <div className="flex flex-col flex-1 min-w-0">

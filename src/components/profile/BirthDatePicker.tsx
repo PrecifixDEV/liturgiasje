@@ -58,7 +58,7 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
           handleUpdate(val, month, year); 
         }}
       >
-        <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
+        <SelectTrigger className="rounded-2xl border-stone-300 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Dia" />
         </SelectTrigger>
         <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)] min-w-0">
@@ -77,7 +77,7 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
           handleUpdate(day, val, year); 
         }}
       >
-        <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
+        <SelectTrigger className="rounded-2xl border-stone-300 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Mês" />
         </SelectTrigger>
         <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)] min-w-0">
@@ -96,7 +96,7 @@ export function BirthDatePicker({ value, onChange }: BirthDatePickerProps) {
           handleUpdate(day, month, val); 
         }}
       >
-        <SelectTrigger className="rounded-2xl border-stone-100 h-12 text-stone-800 font-bold focus:ring-stone-200">
+        <SelectTrigger className="rounded-2xl border-stone-300 h-12 text-stone-800 font-bold focus:ring-stone-200">
           <SelectValue placeholder="Ano" />
         </SelectTrigger>
         <SelectContent className="max-h-[300px] w-[var(--radix-select-trigger-width)] min-w-0">

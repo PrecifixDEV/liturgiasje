@@ -72,6 +72,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  // 3. Realtime para Perfil e Membro
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel(`profile-updates-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${user.id}` },
+        () => fetchProfile(user.id)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'members', filter: `claimed_by=eq.${user.id}` },
+        () => fetchProfile(user.id)
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',

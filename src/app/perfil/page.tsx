@@ -122,7 +122,7 @@ export default function ProfilePage() {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-stone-400">
+                  <div className="flex items-center gap-2 text-[#4e342e]">
                     <UserIcon className="h-3 w-3" />
                     <label className="text-[10px] font-bold uppercase tracking-widest">Nome e Sobrenome</label>
                   </div>
@@ -130,13 +130,13 @@ export default function ProfilePage() {
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                     placeholder="Seu nome"
-                    className="rounded-2xl border-stone-100 focus-visible:ring-stone-200 h-12 text-stone-800 font-medium"
+                    className="rounded-2xl border-stone-300 focus-visible:ring-stone-200 h-12 text-stone-800 font-medium"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-stone-400">
+                  <div className="flex items-center gap-2 text-[#4e342e]">
                     <MessageSquare className="h-3 w-3" />
                     <label className="text-[10px] font-bold uppercase tracking-widest">WhatsApp</label>
                   </div>
@@ -144,12 +144,12 @@ export default function ProfilePage() {
                     value={formData.whatsapp}
                     onChange={(e) => setFormData({ ...formData, whatsapp: maskPhone(e.target.value) })}
                     placeholder="(00) 00000-0000"
-                    className="rounded-2xl border-stone-100 focus-visible:ring-stone-200 h-12 text-stone-800 font-medium"
+                    className="rounded-2xl border-stone-300 focus-visible:ring-stone-200 h-12 text-stone-800 font-medium"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-stone-400">
+                  <div className="flex items-center gap-2 text-[#4e342e]">
                     <Calendar className="h-3 w-3" />
                     <label className="text-[10px] font-bold uppercase tracking-widest">Data de Nascimento</label>
                   </div>
@@ -160,7 +160,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-6 pt-2">
-                  <div className="flex items-center gap-2 text-stone-400">
+                  <div className="flex items-center gap-2 text-[#4e342e]">
                     <Clock className="h-3 w-3" />
                     <label className="text-[10px] font-bold uppercase tracking-widest">Horários de Preferência (Domingo)</label>
                   </div>
@@ -180,7 +180,7 @@ export default function ProfilePage() {
                                 "flex items-center justify-center h-12 px-4 rounded-2xl border text-sm font-bold transition-all",
                                 isSelected 
                                   ? "bg-stone-800 border-stone-800 text-white shadow-md" 
-                                  : "bg-white border-stone-100 text-stone-500 hover:border-stone-200"
+                                  : "bg-white border-stone-300 text-stone-500 hover:border-stone-400"
                               )}
                             >
                               {time}

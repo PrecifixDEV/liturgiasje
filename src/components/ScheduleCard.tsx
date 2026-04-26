@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { CalendarDays, Clock, RefreshCw, CheckCircle, UserPlus, Pencil, Trash2, ChevronDown, ChevronUp, X } from "lucide-react"
 import { isPast, isToday, startOfDay } from "date-fns"
+import { UserAvatarLightbox } from "@/components/profile/UserAvatarLightbox"
 
 interface ReaderSlot {
   id: string
@@ -171,11 +172,11 @@ export function ScheduleCard({
                             <span className="text-[13px] font-bold text-stone-800 leading-tight truncate">
                               {slot.readerName || "---"}
                             </span>
-                            {slot.avatarUrl && (
-                              <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm ml-1">
+                            <UserAvatarLightbox name={slot.readerName || "Leitor"} avatarUrl={slot.avatarUrl}>
+                              <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm ml-1 cursor-zoom-in">
                                 <img src={slot.avatarUrl} alt={slot.readerName} className="h-full w-full object-cover" />
                               </div>
-                            )}
+                            </UserAvatarLightbox>
                             {slot.originalReaderName && slot.readerName !== slot.originalReaderName && (
                               <span className="text-[9px] font-medium text-stone-400 italic shrink-0">
                                 (subst. {slot.originalReaderName})

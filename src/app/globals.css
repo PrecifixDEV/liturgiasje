@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -49,13 +49,13 @@
 
   @keyframes glow-pulse {
     0%, 100% {
-      box-shadow: 0 0 5px rgba(251, 191, 36, 0.2);
-      border-color: rgba(251, 191, 36, 0.4);
+      box-shadow: 0 0 5px rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
       transform: scale(1);
     }
     50% {
-      box-shadow: 0 0 20px rgba(251, 191, 36, 0.6), 0 0 10px rgba(251, 191, 36, 0.3);
-      border-color: rgba(251, 191, 36, 1);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.6), 0 0 10px rgba(239, 68, 68, 0.3);
+      border-color: rgba(239, 68, 68, 1);
       transform: scale(1.01);
     }
   }

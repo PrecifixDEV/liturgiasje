@@ -8,6 +8,7 @@ import { APP_VERSION } from "@/constants/version"
 declare global {
   interface Window {
     deferredPrompt: any;
+    __swRegistrationStarted?: boolean;
   }
 }
 
@@ -90,6 +91,9 @@ export function PWAHandler() {
       };
 
       const registerServiceWorker = async () => {
+        if (window.__swRegistrationStarted) return null;
+        window.__swRegistrationStarted = true;
+
         try {
           // Adicionamos ?v= para contornar o cache do Safari no arquivo sw.js
           const registration = await navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`)
@@ -148,6 +152,7 @@ export function PWAHandler() {
           return { intervalId, focusHandler, visibilityHandler };
         } catch (error) {
           console.error('Erro ao registrar PWA Service Worker:', error)
+          window.__swRegistrationStarted = false;
           return null;
         }
       }
