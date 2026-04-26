@@ -11,6 +11,7 @@ export interface UserProfile {
   preferences?: any
   claimed_at?: string
   is_self_registered?: boolean
+  updated_at?: string
 }
 
 /**
