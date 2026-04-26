@@ -185,8 +185,14 @@ export function ScheduleCard({
                               {slot.readerName || "---"}
                             </span>
                             <UserAvatarLightbox memberId={slot.memberId} name={slot.readerName || "Leitor"} avatarUrl={slot.avatarUrl}>
-                              <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm ml-1 cursor-zoom-in">
-                                <img src={slot.avatarUrl} alt={slot.readerName} className="h-full w-full object-cover" />
+                              <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm ml-1 cursor-zoom-in flex items-center justify-center bg-stone-50">
+                                {slot.avatarUrl ? (
+                                  <img src={slot.avatarUrl} alt={slot.readerName} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center bg-stone-100 text-stone-300">
+                                    <User className="h-3.5 w-3.5" />
+                                  </div>
+                                )}
                               </div>
                             </UserAvatarLightbox>
                             {slot.originalReaderName && slot.readerName !== slot.originalReaderName && (
