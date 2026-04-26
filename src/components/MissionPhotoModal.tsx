@@ -70,10 +70,10 @@ export function MissionPhotoModal({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger 
         render={
-          <div 
-            role="button"
+          <button 
+            type="button"
             className={cn(
-              "p-1.5 rounded-full transition-all active:scale-90 cursor-pointer",
+              "p-1.5 rounded-full transition-all active:scale-90 cursor-pointer focus:outline-none",
               photoUrl 
                 ? "bg-amber-100 text-amber-700 hover:bg-amber-200" 
                 : canUpload 
@@ -82,7 +82,7 @@ export function MissionPhotoModal({
             )}
           >
             {photoUrl ? <Camera className="h-4 w-4 fill-current" /> : <Camera className="h-4 w-4" />}
-          </div>
+          </button>
         }
       />
 

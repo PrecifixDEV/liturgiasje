@@ -75,12 +75,12 @@ export function UserAvatarLightbox({ memberId, name, avatarUrl, children }: User
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger 
         render={
-          <div 
-            role="button"
+          <button 
+            type="button"
             className="focus:outline-none transition-transform active:scale-95 text-left border-none bg-transparent p-0 cursor-pointer"
           >
             {children}
-          </div>
+          </button>
         }
       />
       <DialogContent className="max-w-[90vw] sm:max-w-md p-0 border-none bg-stone-50 rounded-3xl shadow-2xl overflow-hidden focus:outline-none">
