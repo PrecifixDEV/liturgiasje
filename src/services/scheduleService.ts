@@ -378,5 +378,33 @@ export const scheduleService = {
 
     if (error) throw error
     return data || []
+  },
+
+  async uploadMissionPhoto(massId: string, file: File) {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${massId}-${Math.random().toString(36).substring(2)}.${fileExt}`
+    const filePath = `mission-photos/${fileName}`
+
+    // 1. Upload para o Storage
+    const { error: uploadError } = await supabase.storage
+      .from('mass-photos')
+      .upload(filePath, file)
+
+    if (uploadError) throw uploadError
+
+    // 2. Pegar a URL pública
+    const { data: { publicUrl } } = supabase.storage
+      .from('mass-photos')
+      .getPublicUrl(filePath)
+
+    // 3. Atualizar a missa no banco
+    const { error: updateError } = await supabase
+      .from('masses')
+      .update({ photo_url: publicUrl })
+      .eq('id', massId)
+
+    if (updateError) throw updateError
+
+    return publicUrl
   }
 }

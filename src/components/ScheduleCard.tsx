@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { CalendarDays, Clock, RefreshCw, CheckCircle, UserPlus, Pencil, Trash2, ChevronDown, ChevronUp, X } from "lucide-react"
+import { Camera, CalendarDays, Clock, RefreshCw, CheckCircle, UserPlus, Pencil, Trash2, ChevronDown, ChevronUp, X } from "lucide-react"
 import { isPast, isToday, startOfDay } from "date-fns"
 import { UserAvatarLightbox } from "@/components/profile/UserAvatarLightbox"
+import { useAuthContext } from "@/providers/AuthProvider"
+import { MissionPhotoModal } from "./MissionPhotoModal"
 
 interface ReaderSlot {
   id: string
@@ -93,7 +95,7 @@ export function ScheduleCard({
   return (
     <Card className={cn(
       "overflow-hidden border-stone-200 bg-white shadow-sm p-0 gap-0 transition-all",
-      !isPublished && isAdmin && "border-2 border-orange-500 ring-2 ring-orange-100",
+      !isPublished && adminProp && "border-2 border-orange-500 ring-2 ring-orange-100",
       isDatePast && !isExpanded && "opacity-80"
     )}>
       {adminBar}
@@ -135,13 +137,22 @@ export function ScheduleCard({
         {items.map((item, itemIndex) => (
           <div key={item.id} className={cn("flex flex-col", itemIndex > 0 && "border-t-4 border-stone-200")}>
             {/* Sub-header do Horário */}
-            <div className="flex items-center bg-stone-50/30 px-4 py-2 border-b border-stone-50 gap-3">
+            <div className="flex items-center justify-between bg-stone-50/30 px-4 py-2 border-b border-stone-50 gap-3">
               <div className="flex items-center gap-2 text-stone-600">
                 <Clock className="h-3.5 w-3.5" />
                 <span className="text-xs font-black tracking-tight">
                   {item.time} {item.specialTitle && <span className="text-stone-600 ml-1"> — {item.specialTitle}</span>}
                 </span>
               </div>
+
+              <MissionPhotoModal 
+                massId={item.id}
+                date={rawDate.toISOString()}
+                time={item.time}
+                readers={item.slots.map(s => s.readerName || "Leitor").filter(n => n !== "---")}
+                photoUrl={(item as any).photo_url}
+                canUpload={item.slots.some(s => s.isMine)}
+              />
             </div>
 
               <div className="divide-y divide-stone-100">

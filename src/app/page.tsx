@@ -548,6 +548,7 @@ export default function Home() {
                       items={day.items.map((item: any) => ({
                         id: item.id,
                         time: item.time.substring(0, 5),
+                        photo_url: item.photo_url,
                         specialTitle: item.special_description,
                         slots: [...item.slots].sort((a: any, b: any) => 
                           (roleWeights[a.role] || 99) - (roleWeights[b.role] || 99)
