@@ -68,21 +68,23 @@ export function MissionPhotoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <div 
-          role="button"
-          className={cn(
-            "p-1.5 rounded-full transition-all active:scale-90 cursor-pointer",
-            photoUrl 
-              ? "bg-amber-100 text-amber-700 hover:bg-amber-200" 
-              : canUpload 
-                ? "bg-stone-100 text-stone-500 hover:bg-stone-200"
-                : "hidden"
-          )}
-        >
-          {photoUrl ? <Camera className="h-4 w-4 fill-current" /> : <Camera className="h-4 w-4" />}
-        </div>
-      </DialogTrigger>
+      <DialogTrigger 
+        render={
+          <div 
+            role="button"
+            className={cn(
+              "p-1.5 rounded-full transition-all active:scale-90 cursor-pointer",
+              photoUrl 
+                ? "bg-amber-100 text-amber-700 hover:bg-amber-200" 
+                : canUpload 
+                  ? "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                  : "hidden"
+            )}
+          >
+            {photoUrl ? <Camera className="h-4 w-4 fill-current" /> : <Camera className="h-4 w-4" />}
+          </div>
+        }
+      />
 
       <DialogContent className="max-w-[90vw] sm:max-w-md p-6 bg-[#fdfaf6] border-none rounded-[2rem] shadow-2xl focus:outline-none overflow-hidden">
         
