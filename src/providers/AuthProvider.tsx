@@ -43,21 +43,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // 1. Verificar usuário atual ao montar
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-      if (user) {
-        fetchProfile(user.id)
-      } else {
-        setLoading(false)
-      }
-    })
+    let isMounted = true;
 
+    // 1. Verificar usuário atual ao montar
+    const checkInitialSession = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error) throw error
+        
+        if (isMounted) {
+          setUser(user)
+          if (user) {
+            fetchProfile(user.id)
+          } else {
+            setLoading(false)
+          }
+        }
+      } catch (error: any) {
+        // Silenciar erro de lock que é comum em HMR/Dev
+        if (!error.message?.includes('Lock broken')) {
+          console.warn("Erro ao recuperar sessão inicial:", error.message)
+        }
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    checkInitialSession()
+ 
     // 2. Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
+      async (_event: AuthChangeEvent, session: Session | null) => {
+        if (!isMounted) return
+        
         const currentUser = session?.user ?? null
         setUser(currentUser)
+        
         if (currentUser) {
           fetchProfile(currentUser.id)
         } else {
@@ -68,8 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     )
-
-    return () => subscription.unsubscribe()
+ 
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe()
+    }
   }, [])
 
   // 3. Realtime para Perfil e Membro

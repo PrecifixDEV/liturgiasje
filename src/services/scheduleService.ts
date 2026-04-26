@@ -341,12 +341,40 @@ export const scheduleService = {
 
     if (slotError) throw slotError
   },
-
   async checkMassExists(date: string) {
     const { data, error } = await supabase
       .from('masses')
       .select('id')
       .eq('date', date)
+
+    if (error) throw error
+    return data || []
+  },
+
+  async listForMemberThisMonth(memberId: string) {
+    const now = new Date()
+    const start = startOfMonth(now)
+    const end = endOfMonth(now)
+
+    const { data, error } = await supabase
+      .from('schedule_slots')
+      .select(`
+        id,
+        role,
+        is_confirmed,
+        mass:masses!inner (
+          id,
+          date,
+          time,
+          special_description,
+          is_published
+        )
+      `)
+      .eq('member_id', memberId)
+      .eq('mass.is_published', true)
+      .gte('mass.date', format(start, 'yyyy-MM-dd'))
+      .lte('mass.date', format(end, 'yyyy-MM-dd'))
+      .order('mass(date)', { ascending: true })
 
     if (error) throw error
     return data || []

@@ -55,7 +55,7 @@ export function BirthdayCard({ members, currentMonth }: BirthdayCardProps) {
               <div className="space-y-1">
                 {todayBirthdays.map((m) => (
                   <div key={m.id} className="flex items-center gap-3">
-                    <UserAvatarLightbox name={m.full_name} avatarUrl={m.avatar_url}>
+                    <UserAvatarLightbox memberId={m.id} name={m.full_name} avatarUrl={m.avatar_url}>
                       <div className="relative">
                         <Avatar className="h-9 w-9 border-2 border-amber-200">
                           <AvatarImage src={m.avatar_url} />
@@ -116,7 +116,7 @@ export function BirthdayCard({ members, currentMonth }: BirthdayCardProps) {
               return (
                 <div key={m.id} className="flex items-center justify-between bg-white p-3 rounded-2xl border border-stone-100 shadow-sm">
                   <div className="flex items-center gap-3">
-                    <UserAvatarLightbox name={m.full_name} avatarUrl={m.avatar_url}>
+                    <UserAvatarLightbox memberId={m.id} name={m.full_name} avatarUrl={m.avatar_url}>
                       <div className="relative">
                         <Avatar className="h-10 w-10">
                           <AvatarImage src={m.avatar_url} />

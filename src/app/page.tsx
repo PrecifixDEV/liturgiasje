@@ -563,6 +563,7 @@ export default function Home() {
                           } as Record<string, string>)[s.role]) || s.role,
                           readerName: s.reader_name,
                           avatarUrl: s.avatar_url,
+                          memberId: s.member_id,
                           originalReaderName: s.original_reader?.full_name,
                           isConfirmed: s.is_confirmed,
                           isSwapRequested: s.is_swap_requested,

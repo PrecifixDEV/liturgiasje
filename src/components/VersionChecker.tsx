@@ -11,7 +11,13 @@ export function VersionChecker() {
   const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
+    let isMounted = true;
+    let isFetching = false;
+
     async function checkVersion() {
+      if (isFetching || !isMounted) return;
+      isFetching = true;
+
       try {
         // Busca configurações do banco (bypass de cache implícito por ser chamada dinâmica)
         const { data, error } = await supabase
@@ -30,7 +36,7 @@ export function VersionChecker() {
 
         // 1. Verificar se a versão atual é diferente da mínima exigida
         if (minVersion && minVersion !== APP_VERSION) {
-          setNeedsUpdate(true);
+          if (isMounted) setNeedsUpdate(true);
           return;
         }
 
@@ -39,28 +45,30 @@ export function VersionChecker() {
           const forceDate = new Date(forceUpdateAt).getTime();
           const lastCheck = localStorage.getItem('last_force_update_check');
           
-          // Se nunca checou ou se a data do banco é posterior ao último check bem sucedido
           if (!lastCheck || new Date(lastCheck).getTime() < forceDate) {
             console.log("Detectada data de atualização forçada:", forceUpdateAt);
-            
-            // Registra o check ANTES de atualizar para evitar loop infinito se algo falhar
             localStorage.setItem('last_force_update_check', new Date().toISOString());
-            
-            // Só forçamos se o app já estiver aberto há algum tempo ou se for a primeira vez
             handleUpdate(true); 
           }
         }
       } catch (error: any) {
-        console.error("Erro ao verificar versão:", error.message || error);
+        // Silenciar erros de abort/lock que são comuns em ambiente de dev/HMR
+        if (error.name !== 'AbortError' && !error.message?.includes('Lock broken')) {
+          console.error("Erro ao verificar versão:", error.message || error);
+        }
       } finally {
-        setIsChecking(false);
+        if (isMounted) setIsChecking(false);
+        isFetching = false;
       }
     }
 
     checkVersion();
     
     const interval = setInterval(checkVersion, 30 * 60 * 1000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleUpdate = async (silent = false) => {

@@ -15,6 +15,7 @@ interface ReaderSlot {
   roleName?: string
   readerName?: string
   avatarUrl?: string
+  memberId?: string
   originalReaderName?: string
   isConfirmed: boolean
   isSwapRequested: boolean
@@ -172,7 +173,7 @@ export function ScheduleCard({
                             <span className="text-[13px] font-bold text-stone-800 leading-tight truncate">
                               {slot.readerName || "---"}
                             </span>
-                            <UserAvatarLightbox name={slot.readerName || "Leitor"} avatarUrl={slot.avatarUrl}>
+                            <UserAvatarLightbox memberId={slot.memberId} name={slot.readerName || "Leitor"} avatarUrl={slot.avatarUrl}>
                               <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-stone-100 shadow-sm ml-1 cursor-zoom-in">
                                 <img src={slot.avatarUrl} alt={slot.readerName} className="h-full w-full object-cover" />
                               </div>
