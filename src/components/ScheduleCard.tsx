@@ -95,7 +95,7 @@ export function ScheduleCard({
   return (
     <Card className={cn(
       "overflow-hidden border-stone-200 bg-white shadow-sm p-0 gap-0 transition-all",
-      !isPublished && adminProp && "border-2 border-orange-500 ring-2 ring-orange-100",
+      !isPublished && isAdmin && "border-2 border-orange-500 ring-2 ring-orange-100",
       isDatePast && !isExpanded && "opacity-80"
     )}>
       {adminBar}
