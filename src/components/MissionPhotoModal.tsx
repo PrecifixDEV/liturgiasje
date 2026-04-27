@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Camera, Share2, Upload, Loader2, X, Check, Trash2 } from "lucide-react"
 import { scheduleService } from "@/services/scheduleService"
@@ -31,10 +32,12 @@ export function MissionPhotoModal({
   isAdmin,
   onPhotoUploaded 
 }: MissionPhotoModalProps) {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [photoUrl, setPhotoUrl] = useState(initialPhotoUrl)
   const [isUploading, setIsUploading] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
+  const [hasChanged, setHasChanged] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -56,6 +59,7 @@ export function MissionPhotoModal({
       const url = await scheduleService.uploadMissionPhoto(massId, compressedFile)
       
       setPhotoUrl(url)
+      setHasChanged(true)
       onPhotoUploaded?.(url)
     } catch (error) {
       console.error("Erro ao processar foto:", error)
@@ -78,6 +82,7 @@ export function MissionPhotoModal({
     try {
       await scheduleService.deleteMissionPhoto(massId, photoUrl)
       setPhotoUrl(null)
+      setHasChanged(true)
       onPhotoUploaded?.(null)
     } catch (error) {
       console.error("Erro ao apagar foto:", error)
@@ -129,8 +134,19 @@ export function MissionPhotoModal({
     }
   }
 
+  const handleClose = () => {
+    setIsOpen(false)
+    if (hasChanged) {
+      router.refresh()
+      setHasChanged(false)
+    }
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) handleClose()
+      else setIsOpen(true)
+    }}>
       <DialogTrigger 
         render={
           <button 
@@ -262,7 +278,7 @@ export function MissionPhotoModal({
             ) : null}
             
             <button 
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               className="w-full h-14 bg-stone-100 text-stone-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-stone-200 transition-all"
             >
               Fechar
