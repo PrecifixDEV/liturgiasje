@@ -182,7 +182,7 @@ export function MissionPhotoModal({
             
             <div className="relative bg-white p-4 pb-12 shadow-xl border border-stone-100 transform -rotate-1 hover:rotate-0 transition-transform duration-500">
               {/* Área da Foto */}
-              <div className="aspect-square w-full bg-stone-50 overflow-hidden relative border border-stone-50">
+              <div className="aspect-[1.25/1] w-full bg-stone-50 overflow-hidden relative border border-stone-50">
                 {photoUrl ? (
                   <img src={photoUrl} alt="Missão Cumprida" className="w-full h-full object-cover" />
                 ) : isUploading ? (
