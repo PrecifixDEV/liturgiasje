@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useRef, useEffect } from "react"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Camera, Share2, Upload, Loader2, X, Check, Trash2 } from "lucide-react"
 import { scheduleService } from "@/services/scheduleService"
@@ -33,7 +33,13 @@ export function MissionPhotoModal({
   onPhotoUploaded 
 }: MissionPhotoModalProps) {
   const router = useRouter()
-  const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  
+  // O modal começa aberto se o ID da missa estiver na URL
+  const isOpenInUrl = searchParams.get('photoMassId') === massId
+  const [isOpen, setIsOpen] = useState(isOpenInUrl)
+  
   const [photoUrl, setPhotoUrl] = useState(initialPhotoUrl)
   const [isUploading, setIsUploading] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
@@ -41,6 +47,24 @@ export function MissionPhotoModal({
   const [uploadStatus, setUploadStatus] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
+
+  // Sincroniza o estado interno com a URL (para quando a página atualiza)
+  useEffect(() => {
+    const isNowOpen = searchParams.get('photoMassId') === massId
+    if (isNowOpen !== isOpen) {
+      setIsOpen(isNowOpen)
+    }
+  }, [searchParams, massId])
+
+  const updateUrl = (open: boolean) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (open) {
+      params.set('photoMassId', massId)
+    } else {
+      params.delete('photoMassId')
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const originalFile = e.target.files?.[0]
@@ -136,6 +160,7 @@ export function MissionPhotoModal({
 
   const handleClose = () => {
     setIsOpen(false)
+    updateUrl(false)
     if (hasChanged) {
       router.refresh()
       setHasChanged(false)
@@ -145,12 +170,16 @@ export function MissionPhotoModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) handleClose()
-      else setIsOpen(true)
+      else {
+        setIsOpen(true)
+        updateUrl(true)
+      }
     }}>
       <DialogTrigger 
         render={
           <button 
             type="button"
+            onClick={() => updateUrl(true)}
             className={cn(
               "p-1.5 rounded-full transition-all active:scale-90 cursor-pointer focus:outline-none border-none",
               photoUrl 
