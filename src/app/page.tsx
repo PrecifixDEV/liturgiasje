@@ -542,7 +542,7 @@ export default function Home() {
 
                   return sortedDays.map((day: any, dayIndex: number) => (
                     <ScheduleCard 
-                      key={dayIndex} 
+                      key={day.date} 
                       date={format(new Date(day.date + 'T00:00:00'), "EEEE, dd/MM", { locale: ptBR })}
                       rawDate={new Date(day.date + 'T00:00:00')}
                       items={day.items.map((item: any) => ({

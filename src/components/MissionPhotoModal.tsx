@@ -152,15 +152,14 @@ export function MissionPhotoModal({
           <button 
             type="button"
             className={cn(
-              "p-1.5 rounded-full transition-all active:scale-90 cursor-pointer focus:outline-none",
+              "p-1.5 rounded-full transition-all active:scale-90 cursor-pointer focus:outline-none border-none",
               photoUrl 
                 ? "bg-amber-100 text-amber-700 hover:bg-amber-200" 
-                : canUpload 
-                  ? "bg-stone-100 text-stone-500 hover:bg-stone-200"
-                  : "hidden"
+                : "bg-stone-100 text-stone-500 hover:bg-stone-200",
+              !canUpload && !photoUrl && "hidden"
             )}
           >
-            {photoUrl ? <Camera className="h-4 w-4 fill-current" /> : <Camera className="h-4 w-4" />}
+            <Camera className={cn("h-4 w-4", photoUrl && "fill-current")} />
           </button>
         }
       />
