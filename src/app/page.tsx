@@ -80,7 +80,9 @@ export default function Home() {
   // 1. Carregar Avisos
   const loadAnnouncements = async () => {
     try {
-      setIsLoadingAnnouncements(true)
+      if (announcements.length === 0) {
+        setIsLoadingAnnouncements(true)
+      }
       const data = await announcementService.list(user?.id)
       setAnnouncements(data)
     } finally {
@@ -91,7 +93,9 @@ export default function Home() {
   // 1.1 Carregar Solicitações de Troca
   const loadSwaps = async () => {
     try {
-      setIsLoadingSwaps(true)
+      if (swaps.length === 0) {
+        setIsLoadingSwaps(true)
+      }
       const data = await scheduleService.listAllSwaps()
       setSwaps(data)
     } finally {
@@ -102,7 +106,9 @@ export default function Home() {
   // 2. Carregar Escala
   const loadSchedule = async () => {
     try {
-      setIsLoadingSchedule(true)
+      if (schedule.length === 0) {
+        setIsLoadingSchedule(true)
+      }
       const isAdmin = profile?.role === "admin"
       const data = await scheduleService.listForMonth(currentDate, isAdmin)
       setSchedule(data)
