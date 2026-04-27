@@ -404,7 +404,66 @@ export const scheduleService = {
       .eq('id', massId)
 
     if (updateError) throw updateError
-
     return publicUrl
+  },
+
+  async getMassesWithPhotos() {
+    const { data, error } = await supabase
+      .from('masses')
+      .select(`
+        id,
+        date,
+        time,
+        special_description,
+        photo_url,
+        photo_description,
+        slots:schedule_slots (
+          id,
+          role,
+          member:members (
+            full_name
+          )
+        )
+      `)
+      .not('photo_url', 'is', null)
+      .order('date', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  },
+
+  async deleteMissionPhoto(massId: string, photoUrl: string) {
+    // 1. Extrair o caminho do arquivo a partir da URL
+    const urlParts = photoUrl.split('/storage/v1/object/public/mass-photos/')
+    const filePath = urlParts[1]
+
+    if (filePath) {
+      // 2. Remover do Storage
+      const { error: storageError } = await supabase.storage
+        .from('mass-photos')
+        .remove([filePath])
+      
+      if (storageError) console.error("Erro ao remover do storage:", storageError)
+    }
+
+    // 3. Limpar no banco de dados
+    const { error: dbError } = await supabase
+      .from('masses')
+      .update({ 
+        photo_url: null,
+        photo_description: null 
+      })
+      .eq('id', massId)
+
+    if (dbError) throw dbError
+  },
+
+  async updatePhotoDescription(massId: string, description: string) {
+    const { error } = await supabase
+      .from('masses')
+      .update({ photo_description: description })
+      .eq('id', massId)
+
+    if (error) throw error
   }
 }

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Camera, Share2, Upload, Loader2, X, Check } from "lucide-react"
 import { scheduleService } from "@/services/scheduleService"
 import { compressImage } from "@/lib/imageCompression"
+import { generatePolaroidBlob } from "@/lib/polaroidGenerator"
 import { cn } from "@/lib/utils"
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -31,8 +32,10 @@ export function MissionPhotoModal({
   const [isOpen, setIsOpen] = useState(false)
   const [photoUrl, setPhotoUrl] = useState(initialPhotoUrl)
   const [isUploading, setIsUploading] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const originalFile = e.target.files?.[0]
@@ -58,12 +61,51 @@ export function MissionPhotoModal({
     } finally {
       setIsUploading(false)
       setUploadStatus("")
+      // Limpar os inputs para permitir selecionar a mesma foto novamente se necessário
+      if (fileInputRef.current) fileInputRef.current.value = ""
+      if (galleryInputRef.current) galleryInputRef.current.value = ""
     }
   }
 
-  const shareToWhatsApp = () => {
-    const text = `📸 Missão Cumprida! Confira a foto da nossa missão na Liturgia SJE.\n\n📅 ${format(parseISO(date), "dd/MM/yyyy")} às ${time.substring(0, 5)}\n📖 Leitores: ${readers.join(", ")}\n\nVeja aqui: ${photoUrl}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+  const shareToWhatsApp = async () => {
+    if (!photoUrl) return
+    
+    setIsSharing(true)
+    try {
+      // 1. Gerar a imagem da Polaroid
+      const blob = await generatePolaroidBlob(photoUrl, date, time, readers)
+      const file = new File([blob], `missao-cumprida-${format(new Date(), 'dd-MM')}.jpg`, { type: 'image/jpeg' })
+
+      const shortNames = readers.map(name => name.split(' ')[0]).join(', ')
+      const caption = `📸 Missão Cumprida! \n\n📅 ${format(parseISO(date), "dd/MM/yyyy")} às ${time.substring(0, 5)}\n📖 Leitores: ${shortNames}\n\n#LiturgiaSJE`
+
+      // 2. Tentar usar Web Share API (Nativa do celular)
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Missão Cumprida',
+          text: caption,
+        })
+      } else {
+        // Fallback para Desktop: Download da imagem + link do WhatsApp
+        const downloadUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = `polaroid-missao-${format(new Date(), 'dd-MM')}.jpg`
+        link.click()
+        URL.revokeObjectURL(downloadUrl)
+
+        const waText = `${caption}\n\nVeja a foto completa: ${photoUrl}`
+        window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank')
+      }
+    } catch (error) {
+      console.error("Erro ao compartilhar:", error)
+      // Fallback básico
+      const waText = `📸 Missão Cumprida!\n📖 Leitores: ${readers.join(', ')}\n🔗 ${photoUrl}`
+      window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank')
+    } finally {
+      setIsSharing(false)
+    }
   }
 
   return (
@@ -109,7 +151,7 @@ export function MissionPhotoModal({
                 ) : isUploading ? (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-stone-400">
                     <Loader2 className="h-8 w-8 animate-spin" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Enviando...</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{uploadStatus}</span>
                   </div>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
@@ -117,7 +159,7 @@ export function MissionPhotoModal({
                       <Upload className="h-6 w-6 text-stone-300" />
                     </div>
                     <p className="text-[11px] text-stone-400 font-medium">
-                      Clique no botão abaixo para registrar a foto da sua missão.
+                      Escolha uma opção abaixo para registrar a foto da sua missão.
                     </p>
                   </div>
                 )}
@@ -129,7 +171,7 @@ export function MissionPhotoModal({
                   {format(parseISO(date), "dd 'de' MMMM", { locale: ptBR })} - {time.substring(0, 5)}
                 </p>
                 <p className="font-['Gochi_Hand'] text-lg text-stone-500 leading-tight">
-                   {readers.join(", ")}
+                   {readers.map(name => name.split(' ')[0]).join(', ')}
                 </p>
               </div>
 
@@ -140,9 +182,9 @@ export function MissionPhotoModal({
           </div>
 
           {/* Botões de Ação */}
-          <div className="w-full flex gap-3 pt-2">
+          <div className="w-full flex flex-col gap-3 pt-2">
             {!photoUrl && canUpload ? (
-              <>
+              <div className="flex gap-2">
                 <input 
                   type="file" 
                   accept="image/*" 
@@ -151,28 +193,44 @@ export function MissionPhotoModal({
                   ref={fileInputRef}
                   onChange={handleFileChange}
                 />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  ref={galleryInputRef}
+                  onChange={handleFileChange}
+                />
                 <button 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                   className="flex-1 h-14 bg-[#4e342e] text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#3d2924] transition-all disabled:opacity-50"
                 >
-                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                  <Camera className="h-4 w-4" />
                   Tirar Foto
                 </button>
-              </>
+                <button 
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex-1 h-14 bg-stone-100 text-stone-600 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-stone-200 transition-all disabled:opacity-50 border border-stone-200"
+                >
+                  <Upload className="h-4 w-4" />
+                  Galeria
+                </button>
+              </div>
             ) : photoUrl ? (
               <button 
                 onClick={shareToWhatsApp}
-                className="flex-1 h-14 bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-700 transition-all shadow-lg shadow-green-100"
+                disabled={isSharing}
+                className="w-full h-14 bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:opacity-70"
               >
-                <Share2 className="h-4 w-4" />
+                {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
                 WhatsApp
               </button>
             ) : null}
             
             <button 
               onClick={() => setIsOpen(false)}
-              className="px-6 h-14 bg-stone-100 text-stone-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-stone-200 transition-all"
+              className="w-full h-14 bg-stone-100 text-stone-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-stone-200 transition-all"
             >
               Fechar
             </button>
