@@ -151,7 +151,8 @@ export function ScheduleCard({
                 time={item.time}
                 readers={item.slots.map(s => s.readerName || "Leitor").filter(n => n !== "---")}
                 photoUrl={(item as any).photo_url}
-                canUpload={item.slots.some(s => s.isMine)}
+                canUpload={item.slots.some(s => s.isMine) || isAdmin}
+                isAdmin={isAdmin}
               />
             </div>
 

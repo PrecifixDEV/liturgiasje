@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
-import { Camera, Share2, Upload, Loader2, X, Check } from "lucide-react"
+import { Camera, Share2, Upload, Loader2, X, Check, Trash2 } from "lucide-react"
 import { scheduleService } from "@/services/scheduleService"
 import { compressImage } from "@/lib/imageCompression"
 import { generatePolaroidBlob } from "@/lib/polaroidGenerator"
@@ -17,7 +17,8 @@ interface MissionPhotoModalProps {
   readers: string[]
   photoUrl?: string | null
   canUpload: boolean
-  onPhotoUploaded?: (url: string) => void
+  isAdmin?: boolean
+  onPhotoUploaded?: (url: string | null) => void
 }
 
 export function MissionPhotoModal({ 
@@ -27,6 +28,7 @@ export function MissionPhotoModal({
   readers, 
   photoUrl: initialPhotoUrl, 
   canUpload,
+  isAdmin,
   onPhotoUploaded 
 }: MissionPhotoModalProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -64,6 +66,25 @@ export function MissionPhotoModal({
       // Limpar os inputs para permitir selecionar a mesma foto novamente se necessário
       if (fileInputRef.current) fileInputRef.current.value = ""
       if (galleryInputRef.current) galleryInputRef.current.value = ""
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!photoUrl) return
+    if (!confirm("Tem certeza que deseja apagar esta foto do servidor?")) return
+    
+    setIsUploading(true)
+    setUploadStatus("Apagando...")
+    try {
+      await scheduleService.deleteMissionPhoto(massId, photoUrl)
+      setPhotoUrl(null)
+      onPhotoUploaded?.(null)
+    } catch (error) {
+      console.error("Erro ao apagar foto:", error)
+      alert("Erro ao apagar foto.")
+    } finally {
+      setIsUploading(false)
+      setUploadStatus("")
     }
   }
 
@@ -218,14 +239,26 @@ export function MissionPhotoModal({
                 </button>
               </div>
             ) : photoUrl ? (
-              <button 
-                onClick={shareToWhatsApp}
-                disabled={isSharing}
-                className="w-full h-14 bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:opacity-70"
-              >
-                {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-                WhatsApp
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={shareToWhatsApp}
+                  disabled={isSharing || isUploading}
+                  className="flex-1 h-14 bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:opacity-70"
+                >
+                  {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
+                  WhatsApp
+                </button>
+                {canUpload && (
+                  <button 
+                    onClick={handleDelete}
+                    disabled={isUploading || isSharing}
+                    className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-100 transition-all disabled:opacity-50 border border-red-100"
+                    title="Excluir Foto"
+                  >
+                    {isUploading && uploadStatus === "Apagando..." ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-5 w-5" />}
+                  </button>
+                )}
+              </div>
             ) : null}
             
             <button 
